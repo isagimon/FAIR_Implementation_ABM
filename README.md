@@ -20,4 +20,7 @@ This Agent-Based Model (ABM) simulates early-stage protein aggregation under mac
 - Spherical crowders influence spatial dynamics and diffusion
 - Output: number of monomers, oligomers, and fibrils over time
 
-##Reaction Summary
+## Reaction Summary 
+
+## License
+This code is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
