@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this model, please cite it as below:"
+title: "Agent-Based Model of Protein Aggregation under Macromolecular Crowding"
+version: 1.0.0
+date-released: 2025-04-14
+
+authors:
+  - family-names: Gimon
+    given-names: Isabella
+    affiliation: University of Notre Dame
+    orcid: https://orcid.org/0000-0000-XXXX-XXXX  # Optional but recommended
+
+repository-code: https://github.com/isagimon/FCC_AmorphousAggr_V1_CRC
+license: MIT
+keywords:
+  - agent-based modeling
+  - protein aggregation
+  - macromolecular crowding
+  - amyloid
+  - systems biology
