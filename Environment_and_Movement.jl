@@ -3,7 +3,6 @@ using Plots
 using DataFrames
 using CSV
 using Dates
-using XLSX
 using Profile
 using Base.Threads
 
