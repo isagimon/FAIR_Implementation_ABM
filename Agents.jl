@@ -19,13 +19,13 @@ Dependencies:
 Outputs:
   - Global dictionaries with spatial monomer/sphere data
 License: http://www.apache.org/licenses/LICENSE-2.0
-Date: $(Dates.format(now(), "yyyy-mm-dd"))
 """
 
 using Random
 using Plots
 using CSV
 using DataFrames
+using Dates
 
 # State values: Enumeration of possible states for lattice locations.
 const NativeState_Value = 1  # Native monomer state
@@ -49,13 +49,72 @@ Sphere_Unique_Numbers = collect(500000:2000000)
 Monomer_Unique_Numbers = collect(200001:499999)
 
 # Simulation parameters
-const Lattice_Size = 30           # Size of the cubic lattice (Lattice_Size x Lattice_Size x Lattice_Size)
-const Max_NumberMonomers_Native = 500   # Maximum number of native monomers
-const Max_NumberMonomers_Amyloid = 500  # Maximum number of amyloid-prone monomers
-const Obstacle_Radius = 1         # Radius of spherical crowders (if Obstacle is true)
-const Crowder_Concentration_Spheres = 0.1 # Concentration of spherical crowders
-const Obstacle = false            # Boolean to enable/disable spherical crowders
-const Sphere_Volume = 1           # Volume of a single sphere (in lattice units)
+using Random
+using Plots
+using CSV
+using DataFrames
+
+
+function load_csv_parameters(file_path::String)
+    # Read the CSV file into a DataFrame
+    df = CSV.read(file_path, DataFrame)
+
+    # Standardize column names to remove hidden characters
+    rename!(df, strip.(names(df)))
+    println("Updated column names: ", names(df))
+
+    # Define column names
+    param_col = names(df)[1]  # First column for parameter names
+    value_col = names(df)[2]  # Second column for parameter values
+
+    # Create a dictionary from the first two columns
+    params = Dict(
+        strip(row[param_col]) => 
+        try
+            parse(Float64, strip(string(row[value_col])))
+        catch
+            if strip(string(row[value_col])) == "TRUE"
+                true
+            elseif strip(string(row[value_col])) == "FALSE"
+                false
+            else
+                strip(string(row[value_col]))
+            end
+        end
+        for row in eachrow(df)
+    )
+
+    # Ensure integer values for specific parameters
+    for key in ["Lattice_Size", "Max_NumberMonomers_Native", "Max_NumberMonomers_Amyloid", "Obstacle_Radius", "MAX_NumberMovements"]
+        if haskey(params, key)
+            params[key] = Int(params[key])
+        end
+    end
+
+    println("Loaded parameters: ", keys(params))
+    return params
+end
+
+
+
+# Path to the input parameters CSV file
+file_path = "/Users/isabellagimon/Desktop/Input_Parameters.csv"
+
+# Load parameters
+Parameters = load_csv_parameters(file_path)
+
+# Assign individual variables
+Lattice_Size = Parameters["Lattice_Size"]
+Max_NumberMonomers_Native = Parameters["Max_NumberMonomers_Native"]
+Max_NumberMonomers_Amyloid = Parameters["Max_NumberMonomers_Amyloid"]
+Obstacle_Radius = Parameters["Obstacle_Radius"]
+Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"]
+Obstacle = Parameters["Spheres?"]
+Sphere_Volume = Parameters["Sphere_Volume"]
+
+# Debugging: Print all parameters
+println("Loaded Parameters: ", Parameters)
+
 
 """
 Generate_Coordinates(Lattice_Size)
@@ -184,6 +243,57 @@ Returns the coordinates of the first corner of a unit cell.
 function First_Corner_Position(X, Y, Z)
     return X, Y, Z
 end
+function Second_Corner_Position(X, Y, Z)
+    return X + 1, Y, Z
+end
+
+function Third_Corner_Position(X, Y, Z)
+    return X, Y + 1, Z
+end
+
+function Fourth_Corner_Position(X, Y, Z)
+    return X, Y, Z + 1
+end
+
+function Fifth_Corner_Position(X, Y, Z)
+    return X + 1, Y + 1, Z
+end
+
+function Sixth_Corner_Position(X, Y, Z)
+    return X + 1, Y, Z + 1
+end
+
+function Seventh_Corner_Position(X, Y, Z)
+    return X, Y + 1, Z + 1
+end
+
+function Eighth_Corner_Position(X, Y, Z)
+    return X + 1, Y + 1, Z + 1
+end
+
+function First_Face_Position(X, Y, Z) #Face-centered along each axis
+    return X + 0.5, Y + .5, Z
+end
+
+function Second_Face_Position(X, Y, Z) #Face-centered along each axis
+    return X, Y + 0.5, Z + .5
+end
+ 
+function Third_Face_Position(X, Y, Z) #Face-centered along each axis
+    return X + .5, Y, Z + 0.5
+end
+
+function Fourth_Face_Position(X, Y, Z) #Opposite Faces
+    return X + .5, Y + 0.5, Z + 1
+end
+
+function Fifth_Face_Position(X, Y, Z)  #Opposite Faces
+    return X + 0.5, Y + 1, Z + .5
+end
+
+function Sixth_Face_Position(X, Y, Z)  #Opposite Faces
+    return X + 1, Y + .5, Z + 0.5
+end
 
 # (Similar documentation for other coordinate functions: Second_Corner_Position, Third_Corner_Position, etc.)
 
@@ -217,6 +327,25 @@ function Randomly_Assigns_Location_Monomers_Native()
         if State == 0
             Assigns_State_Monomer_Native(Random_Location)
             Monomers_Made_Native += 1
+        end
+    end
+end
+
+# Function to assign states randomly to amyloid monomers
+function Randomly_Assigns_Location_Monomers_Amyloid()
+    global Locations_and_States_Dict
+    println("We are in Randomly_Assigns_Location_Monomers_Amyloid")
+    Monomers_Made_Amyloid = 0
+    keys_list = collect(keys(Locations_and_States_Dict))
+
+    while Monomers_Made_Amyloid < Max_NumberMonomers_Amyloid
+        Random_Index = rand(1:length(keys_list))
+        Random_Location = keys_list[Random_Index]
+        State, _ = Locations_and_States_Dict[Random_Location]
+
+        if State == 0
+            Assigns_State_Monomer_Amyloid(Random_Location)
+            Monomers_Made_Amyloid += 1
         end
     end
 end
@@ -335,8 +464,8 @@ Determines whether to generate spherical crowders with radius 1 or a different r
 - `Generate_Spherical_Crowders` (if Obstacle_Radius != 1)
 """
 function Differentiate_Sphere_Crowder_Radius()
-    if Obstacle_Radius == 1
-        Generate_Spherical_Crowders_Radius_1()
+    if Obstacle_Radius == 0
+        Generate_Spherical_Crowders_Radius_0()
     else
         Generate_Spherical_Crowders()
     end
@@ -357,7 +486,7 @@ Generates spherical crowders with a radius of 1.
 # Prints
 - Messages indicating sphere creation success/failure.
 """
-function Generate_Spherical_Crowders_Radius_1()
+function Generate_Spherical_Crowders_Radius_0()
     println("We are in the function Generate_Spherical_Crowders_Radius_1")
 
     # Determine the target number of spheres to create
@@ -367,7 +496,7 @@ function Generate_Spherical_Crowders_Radius_1()
     # Generate spheres until we reach the target count
     while generated_spheres < target_spheres
         # Attempt to generate a new sphere
-        success = Making_Spheres_Radius_1()
+        success = Making_Spheres_Radius_0()
 
         if success
             generated_spheres += 1
@@ -394,7 +523,7 @@ Attempts to create a single spherical crowder with a radius of 1.
 # Returns
 - `Bool`: True if a sphere was created successfully, false otherwise.
 """
-function Making_Spheres_Radius_1()
+function Making_Spheres_Radius_0()
     global Locations_and_States_Dict
     keys_list = collect(keys(Locations_and_States_Dict))
 
