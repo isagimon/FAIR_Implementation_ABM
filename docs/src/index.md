@@ -2,11 +2,11 @@
 
 Welcome to the documentation for the `FAIR_Implementation_ABM`, a Julia-based agent-based model designed to simulate protein aggregation dynamics under intracellular-like conditions.
 
-This model investigates how different environmental and molecular parameters — such as macromolecular crowding, conformational changes, and diffusion constraints — influence the transition from native monomers to pathological amyloid structures and functional aggregates.
+This model investigates how different environmental and molecular parameters — such as macromolecular crowding and conformational changes — influence the transition from native monomers to pathological amyloid structures.
 
 ## Key Features
 
-- Supports both functional and pathological aggregation scenarios
+- Supports pathological aggregation scenarios
 - Includes states:  
   - **N**: Native monomer  
   - **A**: Amyloid monomer  
