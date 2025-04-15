@@ -13,4 +13,4 @@ Oligomer_Dissociation_rate,0.005,Probabilities have to be between 0 and 1 (O <- 
 Fibril_Formation,0.9,Probabilities have to be between 0 and 1 (O + A -> F)
 Fibril_Growth,0.9,Probabilities have to be between 0 and 1 (F + A -> Fn)
 MAX_NumberMovements,50,Number of Timesteps
-Directory,/Users/isabellagimon/Desktop/FAIR_Implementation_ABM/Data_Collection,
+Directory,/Users/isabellagimon/Desktop/FAIR_Implementation_ABM/Data_Collection,Be sure that the directory saves the data here: …. /FAIR_Implementation_ABM/Data_Collection
