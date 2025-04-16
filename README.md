@@ -54,10 +54,9 @@ See the `LICENSE` file or visit [http://www.apache.org/licenses/LICENSE-2.0](htt
 
 ## 👩‍🔬 Authors
 
-- Isabella Gimon  
 - Santiago Schnell  
 - Conner Sandefur  
-
+- Isabella Gimon
 ---
 
 ## 📣 Citation
