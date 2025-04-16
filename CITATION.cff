@@ -1,20 +1,18 @@
 cff-version: 1.2.0
-message: "If you use this model, please cite it as below:"
-title: "FAIR Implementation of an Agent-Based Model of Protein Aggregation"
-version: 1.0.0
-date-released: 2025-04-14
+message: "If you use this software, please cite it as below."
+title: "FAIR_Implementation_ABM"
+version: "v1.2.0"
+doi: 10.5281/zenodo.15230587
+date-released: 2025-04-16
 
 authors:
-  - family-names: Gimon-Leos
+  - family-names: Gimon
     given-names: Isabella
-    affiliation: University of Notre Dame
-    orcid: https://orcid.org/0000-0000-XXXX-XXXX  # Replace with your ORCID if you have one
+  - family-names: Schnell
+    given-names: Santiago
+  - family-names: Sandefur
+    given-names: Conner
 
+license: Apache-2.0
 repository-code: https://github.com/isagimon/FAIR_Implementation_ABM
-license: MIT
-keywords:
-  - agent-based modeling
-  - protein aggregation
-  - FAIR principles
-  - macromolecular crowding
-  - systems biology
+

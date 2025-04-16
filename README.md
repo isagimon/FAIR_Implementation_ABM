@@ -3,6 +3,7 @@
 This Julia project simulates the dynamics of protein aggregation on a 3D lattice. It models the stochastic movement and interaction of monomers, including state transitions (Native, Amyloid, Oligomer, Fibril) and the formation of larger aggregates under crowding and kinetic constraints.
 
 ---
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15230587.svg)](https://doi.org/10.5281/zenodo.15230587)
 
 ## 📂 Files
 
