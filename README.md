@@ -28,19 +28,12 @@ This project uses the following Julia packages:
 - `Base.Threads`
 
 ---
+## ⚠️ Assumptions and Limitations
 
-## 🚀 Quick Start
-
-To run the simulation:
-
-```bash
-git clone https://github.com/isagimon/FAIR_Implementation_ABM.git
-cd FAIR_Implementation_ABM
-julia Main_Simulation.jl
-```
-
-For full setup instructions, input parameters, and output file descriptions, refer to the [USAGE.md](USAGE.md) file.
-
+- The simulation is based on a simplified kinetic model of protein aggregation.
+- Monomer movement is stochastic and may not capture all biophysical constraints.
+- Periodic boundary conditions are applied to simulate a continuous space.
+- Crowders (if enabled) are modeled as static, spherical obstacles with fixed radii.
 ---
 
 ## 📜 License
@@ -61,13 +54,25 @@ See the `LICENSE` file or visit [http://www.apache.org/licenses/LICENSE-2.0](htt
 
 ## 📣 Citation
 
-If you use this code in your research, please cite:
 
-> [Authors], "Protein Aggregation Simulation Model", [Year], [Repository URL]
+This repository is licensed under the [Apache License 2.0](LICENSE), which permits reuse, modification, and redistribution under certain conditions.
+
+You are welcome to:
+- Use the code for research or educational purposes
+- Modify parameters or reaction rules for your own models
+- Extend the codebase to include new features
+
+Please cite this repository if you use it in published work:
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15230587.svg)](https://doi.org/10.5281/zenodo.15230587)
+
+For citation details, see the [`CITATION.cff`](CITATION.cff) file.
+
 
 ---
 
 ## 📬 Contact
+---
 
-For questions or suggestions, feel free to reach out to the authors or open an issue on the GitHub repository.
+If you have questions or would like to collaborate, please open an issue or contact the maintainer:
+📧 **Isabella Gimon** (igimon@nd.edu)
 

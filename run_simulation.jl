@@ -9,4 +9,4 @@ Pkg.activate(".")
 Pkg.instantiate()
 
 # Run the simulation
-include("Environment_and_Movement.jl")
+include("src/Environment_and_Movement.jl")

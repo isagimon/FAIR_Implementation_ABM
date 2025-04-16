@@ -98,15 +98,6 @@ Here’s what the columns represent in key `.csv` files:
 
 ---
 
-## ⚠ ️ Assumptions and Limitations
-
-- The simulation uses a simplified kinetic model for aggregation.
-- Monomer movement is stochastic and may not capture all biophysical constraints.
-- Periodic boundary conditions are applied to the lattice.
-- Crowders, if enabled, are treated as static spherical obstacles.
-
----
-
 ## 🧠 Tips
 
 - For faster performance on multi-core machines, consider using Julia's multithreading capabilities with `JULIA_NUM_THREADS`.
