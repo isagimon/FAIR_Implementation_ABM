@@ -28,47 +28,75 @@ License: http://www.apache.org/licenses/LICENSE-2.0
 
 include("Agents.jl")
 
-#INPUT VALUES
-MAX_NumberMovements = Float64(Parameters["MAX_NumberMovements"])
-Native_to_Amyloid = Float64(Parameters["Native_to_Amyloid"])
-Amyloid_to_Native = Float64(Parameters["Amyloid_to_Native"])
-Oligomer_Formation = Float64(Parameters["Oligomer_Formation"])
-Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rate"])
-Fibril_Formation = Float64(Parameters["Fibril_Formation"])
-Fibril_Growth = Float64(Parameters["Fibril_Growth"])
-Directory = String(Parameters["Directory"])
+##########################
+# INPUT PARAMETERS
+##########################
+
+# Simulation controls
+const MAX_NumberMovements        = Float64(Parameters["MAX_NumberMovements"])
+const Native_to_Amyloid         = Float64(Parameters["Native_to_Amyloid"])
+const Amyloid_to_Native         = Float64(Parameters["Amyloid_to_Native"])
+const Oligomer_Formation        = Float64(Parameters["Oligomer_Formation"])
+const Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rate"])
+const Fibril_Formation          = Float64(Parameters["Fibril_Formation"])
+const Fibril_Growth             = Float64(Parameters["Fibril_Growth"])
+const Directory                 = String(Parameters["Directory"])
+
+# Derived parameter
 global max_fibril_size = Max_NumberMonomers_Amyloid + Max_NumberMonomers_Native
 
-#################
+##########################
+# GLOBAL STATE VARIABLES
+##########################
 
 global timesteps = 0
 global CurrentTimeStep = 0
 global Fibril_Length_Count
-Possible_Movement_Options = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve" , "Thirteen", "Fourteen", "Fifteen" , "Sixteen", "Seventeen", "Eighteen" , "None"] 
-Possible_Coordinate_Movements_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Float64, Float64, Float64}}()
-results_df = DataFrame(Timestep = Int[], Oligomers = Int[], Aggregates = Int[])
-results_df_two = DataFrame(Timestep = Int[], Native = Int[], Amyloid = Int[])
-msd_data = DataFrame(Timestep = Int[], MSD_Monomer = Float64[], MSD_Aggregate = Float64[])
-available_numbers = collect(1:200000)
-global max_fibril_size = Max_NumberMonomers_Amyloid + Max_NumberMonomers_Native
 
+# Movement directions
+const Possible_Movement_Options = [
+    "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+    "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+    "Eighteen", "None"
+]
 
-# Create a global lock
+# Movement and tracking
+global Possible_Coordinate_Movements_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Float64, Float64, Float64}}()
+global available_numbers = collect(1:200000)
+
+##########################
+# DATA COLLECTION STRUCTURES
+##########################
+
+results_df       = DataFrame(Timestep = Int[], Oligomers = Int[], Aggregates = Int[])
+results_df_two   = DataFrame(Timestep = Int[], Native = Int[], Amyloid = Int[])
+msd_data         = DataFrame(Timestep = Int[], MSD_Monomer = Float64[], MSD_Aggregate = Float64[])
+
+##########################
+# THREAD SAFETY
+##########################
+
 const dict_lock = ReentrantLock()
 
-
+##########################
+# TIMESTAMPING
+##########################
 
 current_time = now()
 hour_now = hour(current_time)
 minute_now = minute(current_time)
 second_now = second(current_time)
 millisecond_now = Dates.millisecond(current_time)
+
 am_pm = ifelse(hour_now < 12, "AM", "PM")
 adjusted_hour = ifelse(hour_now > 12, hour_now - 12, ifelse(hour_now == 0, 12, hour_now))
 
-global timestamp = string(month(current_time), ":", day(current_time), ":", year(current_time), " Time ", adjusted_hour, "-", minute_now, "-", second_now, ".", millisecond_now, " ", am_pm)
+global timestamp = string(
+    month(current_time), ":", day(current_time), ":", year(current_time),
+    " Time ", adjusted_hour, "-", minute_now, "-", second_now, ".", millisecond_now, " ", am_pm
+)
 
-global use_windows_dir = false #true  # switch for conner to use his (windows) file system (set to true)
+
 
 """
 Make_Directory()
@@ -353,23 +381,11 @@ Exports a DataFrame to a CSV file, with filename based on the timestep.
 - `CurrentTimestep::Int`: The current timestep.
 
 # Global variables read
-- `use_windows_dir`
 - `directory`
 """
 
 
 function Export_DataFrame(df, CurrentTimestep)
-
-    if use_windows_dir 
-        File_Path = "C:/Users/sande/OneDrive/Protein Aggregation/FCC_AmorphousAggr_V1_RESULTS/Simulation_Information.csv" 
-        if CurrentTimeStep <10
-            CSV.write("C:/Users/sande/OneDrive/Protein Aggregation/FCC_AmorphousAggr_V1_RESULTS/Simulation_Test/Timestep00$CurrentTimeStep.csv", df)
-        elseif CurrentTimeStep >=10 && CurrentTimeStep < 100
-            CSV.write("C:/Users/sande/OneDrive/Protein Aggregation/FCC_AmorphousAggr_V1_RESULTS/Simulation_Test/Timestep0$CurrentTimeStep.csv", df)
-        elseif CurrentTimeStep >=100 && CurrentTimeStep < 100000
-           CSV.write("C:/Users/sande/OneDrive/Protein Aggregation/FCC_AmorphousAggr_V1_RESULTS/Simulation_Test/Timestep$CurrentTimeStep.csv", df)
-        end
-    else
         if CurrentTimeStep <10
             CSV.write("$Directory/Simulation_$timestamp/Timestep00$CurrentTimeStep.csv", df)
         elseif CurrentTimeStep >=10 && CurrentTimeStep < 100
@@ -377,8 +393,6 @@ function Export_DataFrame(df, CurrentTimestep)
         elseif CurrentTimeStep >=100 && CurrentTimeStep < 100000
            CSV.write("$Directory/Simulation_$timestamp/Timestep$CurrentTimeStep.csv", df)
         end
-    end
-
     
 end
 
@@ -887,8 +901,17 @@ function Movement_One_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
-# (Similar documentation for other movement functions: Movement_Two_Coordinate, Movement_Three_Coordinate, etc.)
+"""
+Movement_Two_Coordinate(Monomer)
 
+Calculates the new coordinates after a movement of +1 in the Y direction.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the movement in the +Y direction.
+"""
 
 function Movement_Two_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -897,12 +920,42 @@ function Movement_Two_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Two_Coordinate_Exception(Monomer)
+
+Handles boundary wrapping when a monomer moves in the +Y direction and exceeds the lattice boundary.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after applying the boundary condition in Y.
+"""
+
 function Movement_Two_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = 0
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Two_Coordinate_Exception_Second(Monomer)
+
+Handles movement of +1 in Y with second exception boundary wrapping.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 
 function Movement_Two_Coordinate_Exception_Second(Monomer) 
@@ -912,6 +965,17 @@ function Movement_Two_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Three_Coordinate(Monomer)
+
+Calculates the new coordinates after a movement of +1 in the Z direction.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the movement in the +Z direction.
+"""
 
 function Movement_Three_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -920,6 +984,21 @@ function Movement_Three_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Three_Coordinate_Exception(Monomer)
+
+Handles boundary wrapping when a monomer moves in the +Z direction and exceeds the lattice boundary.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after applying the boundary condition in Z.
+"""
+
 function Movement_Three_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
@@ -927,12 +1006,40 @@ function Movement_Three_Coordinate_Exception(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Three_Coordinate_Exception_Second(Monomer)
+
+Handles movement of +1 in Z with second exception boundary wrapping.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
+
 function Movement_Three_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = (Retrieve_Z_Coordinate(Monomer) + 1 ) - Lattice_Size
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Four_Coordinate(Monomer)
+
+Calculates the new coordinates after a movement of -1 in the X direction.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the movement in the -X direction.
+"""
 
 
 function Movement_Four_Coordinate(Monomer) 
@@ -942,12 +1049,44 @@ function Movement_Four_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Four_Coordinate_Exception(Monomer)
+
+Handles boundary wrapping when a monomer moves in the -X direction and crosses the minimum boundary (X = 0).
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after applying the boundary condition in X.
+"""
+
+
 function Movement_Four_Coordinate_Exception(Monomer) 
     X_Coordinate = Lattice_Size
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Four_Coordinate_Exception_Second(Monomer)
+
+Handles movement of -1 in X with second exception from 0.5 boundary position.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 
 function Movement_Four_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Lattice_Size - .5
@@ -956,12 +1095,41 @@ function Movement_Four_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Five_Coordinate(Monomer)
+
+Calculates the new coordinates after a movement of -1 in the Y direction.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the movement in the -Y direction.
+"""
+
+
 function Movement_Five_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer) - 1
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Five_Coordinate_Exception(Monomer)
+
+Handles boundary wrapping when a monomer moves in the -Y direction and crosses the minimum boundary (Y = 0).
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after applying the boundary condition in Y.
+"""
+
 
 function Movement_Five_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -970,12 +1138,41 @@ function Movement_Five_Coordinate_Exception(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Five_Coordinate_Exception_Second(Monomer)
+
+Handles movement of -1 in Y with second exception from 0.5 boundary position.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
+
 function Movement_Five_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Lattice_Size - .5
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Six_Coordinate(Monomer)
+
+Calculates the new coordinates after a movement of -1 in the Z direction.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the movement in the -Z direction.
+"""
+
 
 function Movement_Six_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -984,12 +1181,44 @@ function Movement_Six_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Six_Coordinate_Exception(Monomer)
+
+Handles boundary wrapping when a monomer moves in the -Z direction and crosses the minimum boundary (Z = 0).
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after applying the boundary condition in Z.
+"""
+
+
 function Movement_Six_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Lattice_Size
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Six_Coordinate_Exception_Second(Monomer)
+
+Handles movement of -1 in Z with second exception from 0.5 boundary position.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 
 function Movement_Six_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -998,6 +1227,17 @@ function Movement_Six_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Seven_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of +0.5 in X and -0.5 in Y.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XY plane.
+"""
 
 function Movement_Seven_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer) + .5
@@ -1006,12 +1246,38 @@ function Movement_Seven_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
  
+"""
+Movement_Seven_Coordinate_Exception(Monomer)
+
+Handles special boundary cases for diagonal movement in the XY plane when at corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
+
 function Movement_Seven_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Seven_Coordinate_Exception_Second(Monomer)
+
+Handles diagonal XY movement with intermediate boundary exception logic.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 
 function Movement_Seven_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_Y_Coordinate(Monomer)
@@ -1020,12 +1286,37 @@ function Movement_Seven_Coordinate_Exception_Second(Monomer)
     return  X_Coordinate , Y_Coordinate, Z_Coordinate 
 end
 
+"""
+Movement_Seven_Coordinate_Exception_Third(Monomer)
+
+Handles edge case for movement on X = Lattice_Size and Y = 0.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Seven_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = 0
     Y_Coordinate = Lattice_Size
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Eight_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of -0.5 in X and +0.5 in Y.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XY plane.
+"""
+
 
 function Movement_Eight_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer) - .5
@@ -1034,12 +1325,37 @@ function Movement_Eight_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Eight_Coordinate_Exception(Monomer)
+
+Handles special boundary cases for diagonal movement in the XY plane when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
+
 function Movement_Eight_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Eight_Coordinate_Exception_Second(Monomer)
+
+Handles flipped XY diagonal transition during movement with partial edge conditions.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Eight_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_Y_Coordinate(Monomer)
@@ -1048,12 +1364,39 @@ function Movement_Eight_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate, Z_Coordinate
 end
 
+"""
+Movement_Eight_Coordinate_Exception_Third(Monomer)
+
+Wraps from X = 0 and Y = Lattice_Size across boundary diagonally.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Eight_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Lattice_Size
     Y_Coordinate = 0
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return Y_Coordinate , X_Coordinate, Z_Coordinate
 end
+
+"""
+Movement_Nine_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of +0.5 in Y and -0.5 in Z.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the YZ plane.
+"""
 
 
 function Movement_Nine_Coordinate(Monomer) 
@@ -1063,12 +1406,37 @@ function Movement_Nine_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Nine_Coordinate_Exception(Monomer)
+
+Handles special boundary cases for diagonal movement in the YZ plane when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
+
 function Movement_Nine_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Nine_Coordinate_Exception_Second(Monomer)
+
+Handles YZ diagonal movement boundary exceptions from sides or corners.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Nine_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1077,12 +1445,36 @@ function Movement_Nine_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate, Z_Coordinate
 end
 
+"""
+Movement_Nine_Coordinate_Exception_Third(Monomer)
+
+Edge case where Y = Lattice_Size and Z = 0 for diagonal motion.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Nine_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = 0
     Z_Coordinate = Lattice_Size
     return X_Coordinate , Z_Coordinate , Y_Coordinate
 end
+
+"""
+Movement_Ten_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of -0.5 in Y and +0.5 in Z.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the YZ plane.
+"""
 
 
 function Movement_Ten_Coordinate(Monomer) 
@@ -1092,12 +1484,37 @@ function Movement_Ten_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Ten_Coordinate_Exception(Monomer)
+
+Handles special boundary cases for diagonal movement in the YZ plane when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
+
 function Movement_Ten_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Ten_Coordinate_Exception_Second(Monomer)
+
+Handles motion across the ZY plane with boundary condition logic.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Ten_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1106,12 +1523,37 @@ function Movement_Ten_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Ten_Coordinate_Exception_Third(Monomer)
+
+Wraps from Z = Lattice_Size and Y = 0 for half-step motion.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Ten_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Lattice_Size
     Z_Coordinate = 0
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Eleven_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of +0.5 in X and -0.5 in Z.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XZ plane.
+"""
+
 
 function Movement_Eleven_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer) + .5
@@ -1120,12 +1562,36 @@ function Movement_Eleven_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Eleven_Coordinate_Exception(Monomer)
+
+Handles special boundary cases for diagonal movement in the XZ plane when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
 function Movement_Eleven_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Eleven_Coordinate_Exception_Second(Monomer)
+
+Handles diagonal XZ movement with Z-based boundary flipping.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Eleven_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_Z_Coordinate(Monomer) 
@@ -1134,12 +1600,36 @@ function Movement_Eleven_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Eleven_Coordinate_Exception_Third(Monomer)
+
+Edge wrap where Z = 0 and X = Lattice_Size.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Eleven_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = 0
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Lattice_Size
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Twelve_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of -0.5 in X and +0.5 in Z.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XZ plane.
+"""
 
 function Movement_Twelve_Coordinate(Monomer)
     X_Coordinate = Retrieve_X_Coordinate(Monomer) - .5
@@ -1148,12 +1638,37 @@ function Movement_Twelve_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Twelve_Coordinate_Exception(Monomer)
+
+Handles special boundary cases for diagonal movement in the XZ plane when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
+
 function Movement_Twelve_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) 
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Twelve_Coordinate_Exception_Second(Monomer)
+
+Boundary case where movement in the XZ plane requires coordinate swap.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Twelve_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Retrieve_Z_Coordinate(Monomer)
@@ -1162,12 +1677,40 @@ function Movement_Twelve_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
 
+"""
+Movement_Twelve_Coordinate_Exception_Third(Monomer)
+
+Wraps X = 0 and Z = Lattice_Size for half-step motion.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`
+
+# Global variables read
+- `Lattice_Size`
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Twelve_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Lattice_Size
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = 0
     return X_Coordinate , Y_Coordinate , Z_Coordinate
 end
+
+"""
+Movement_Thirteen_Coordinate_Exception(Monomer)
+
+Handles boundary conditions for diagonal movement involving the XZ plane when at specific corner or edge cases.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for boundary conditions during Movement Thirteen.
+"""
+
 
 function Movement_Thirteen_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1176,12 +1719,30 @@ function Movement_Thirteen_Coordinate_Exception(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Thirteen_Coordinate_Exception_Second(Monomer)
+
+Wraps when X = 0 and Z is internal for diagonal backward motion.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Thirteen_Coordinate_Exception_Second(Monomer)
     X_Coordinate = Lattice_Size - Retrieve_Z_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Lattice_Size
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Thirteen_Coordinate_Exception_Third(Monomer)
+
+Handles XZ plane mirror edge at Z = 0.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Thirteen_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Lattice_Size
@@ -1190,6 +1751,15 @@ function Movement_Thirteen_Coordinate_Exception_Third(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Thirteen_Coordinate_Exception_Fourth(Monomer)
+
+Directly sets coordinate to Lattice_Size on X and Z axis.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Thirteen_Coordinate_Exception_Fourth(Monomer) 
     X_Coordinate = Lattice_Size
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
@@ -1197,12 +1767,37 @@ function Movement_Thirteen_Coordinate_Exception_Fourth(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Thirteen_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of -0.5 in both X and Z directions.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XZ plane.
+"""
+
+
 function Movement_Thirteen_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer) - .5
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) -.5
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Fourteen_Coordinate_Exception(Monomer)
+
+Handles boundary conditions for diagonal movement in the XZ plane during Movement Fourteen when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
 
 
 function Movement_Fourteen_Coordinate_Exception(Monomer)  
@@ -1212,12 +1807,30 @@ function Movement_Fourteen_Coordinate_Exception(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Fourteen_Coordinate_Exception_Second(Monomer)
+
+Flips coordinate from Z to X across the boundary plane.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Fourteen_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = 0
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Lattice_Size - (Retrieve_X_Coordinate(Monomer))
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Fourteen_Coordinate_Exception_Third(Monomer)
+
+Wraps across X-Z boundary when X = Lattice_Size and Z is interior.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Fourteen_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Lattice_Size - (Retrieve_Z_Coordinate(Monomer))
@@ -1226,12 +1839,33 @@ function Movement_Fourteen_Coordinate_Exception_Third(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Fourteen_Coordinate_Exception_Fourth(Monomer)
+
+Boundary fix for X = Lattice_Size and Z = Lattice_Size
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Fourteen_Coordinate_Exception_Fourth(Monomer) 
     X_Coordinate = Lattice_Size 
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Lattice_Size
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Fourteen_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of +0.5 in both X and Z directions.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XZ plane.
+"""
 
 
 function Movement_Fourteen_Coordinate(Monomer) 
@@ -1241,6 +1875,18 @@ function Movement_Fourteen_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Fifteen_Coordinate_Exception(Monomer)
+
+Handles boundary conditions for diagonal movement in the YZ plane during Movement Fifteen when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
 
 function Movement_Fifteen_Coordinate_Exception(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1249,12 +1895,30 @@ function Movement_Fifteen_Coordinate_Exception(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Fifteen_Coordinate_Exception_Second(Monomer)
+
+Handles diagonal YZ wrapping from Y = 0 and Z internal.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Fifteen_Coordinate_Exception_Second(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Lattice_Size - Retrieve_Z_Coordinate(Monomer)
     Z_Coordinate = Lattice_Size
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Fifteen_Coordinate_Exception_Third(Monomer)
+
+Wraps from Z = 0 and internal Y for diagonal transition.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Fifteen_Coordinate_Exception_Third(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1263,12 +1927,33 @@ function Movement_Fifteen_Coordinate_Exception_Third(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Fifteen_Coordinate_Exception_Fourth(Monomer)
+
+Edge fix for Y = 0 and Z = 0
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Fifteen_Coordinate_Exception_Fourth(Monomer)
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Lattice_Size
     Z_Coordinate = Lattice_Size 
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Fifteen_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of -0.5 in both Y and Z directions.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the YZ plane.
+"""
 
 function Movement_Fifteen_Coordinate(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1277,12 +1962,34 @@ function Movement_Fifteen_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Sixteen_Coordinate_Exception(Monomer)
+
+Handles boundary conditions for diagonal movement in the YZ plane during Movement Sixteen when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
+
 function Movement_Sixteen_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Sixteen_Coordinate_Exception_Second(Monomer)
+
+Wraps to origin from opposing Y and Z limits.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Sixteen_Coordinate_Exception_Second(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1291,12 +1998,30 @@ function Movement_Sixteen_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Sixteen_Coordinate_Exception_Third(Monomer)
+
+Reflects Y into Z axis for diagonal wrapping.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Sixteen_Coordinate_Exception_Third(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = 0
     Z_Coordinate = Lattice_Size - Retrieve_Y_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Sixteen_Coordinate_Exception_Fourth(Monomer)
+
+Reflects Z into Y axis for diagonal wrapping.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Sixteen_Coordinate_Exception_Fourth(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1305,12 +2030,36 @@ function Movement_Sixteen_Coordinate_Exception_Fourth(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Sixteen_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of +0.5 in both Y and Z directions.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the YZ plane.
+"""
+
 function Movement_Sixteen_Coordinate(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer) + .5
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer) + .5
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Seventeen_Coordinate_Exception(Monomer)
+
+Handles boundary conditions for diagonal movement in the XY plane during Movement Seventeen when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
 
 function Movement_Seventeen_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
@@ -1319,12 +2068,30 @@ function Movement_Seventeen_Coordinate_Exception(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Seventeen_Coordinate_Exception_Second(Monomer)
+
+Fixes edge case where both X and Y are at lattice origin or max.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Seventeen_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = Lattice_Size
     Y_Coordinate = Lattice_Size
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Seventeen_Coordinate_Exception_Third(Monomer)
+
+Reflects Y value across X for periodic logic.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Seventeen_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Lattice_Size - Retrieve_Y_Coordinate(Monomer)
@@ -1333,12 +2100,33 @@ function Movement_Seventeen_Coordinate_Exception_Third(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Seventeen_Coordinate_Exception_Fourth(Monomer)
+
+Reflects X value across Y for periodic logic.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Seventeen_Coordinate_Exception_Fourth(Monomer) 
     X_Coordinate = Lattice_Size 
     Y_Coordinate = Lattice_Size - Retrieve_X_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Seventeen_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of -0.5 in both X and Y directions.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XY plane.
+"""
 
 function Movement_Seventeen_Coordinate(Monomer)  
     X_Coordinate = Retrieve_X_Coordinate(Monomer) - .5
@@ -1347,12 +2135,33 @@ function Movement_Seventeen_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Eighteen_Coordinate_Exception(Monomer)
+
+Handles boundary conditions for diagonal movement in the XY plane during Movement Eighteen when near corners or edges.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The coordinates adjusted for edge or corner boundary conditions.
+"""
+
 function Movement_Eighteen_Coordinate_Exception(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer)
     Y_Coordinate = Retrieve_Y_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Eighteen_Coordinate_Exception_Second(Monomer)
+
+Handles full diagonal wrap from both X and Y boundaries.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 
 function Movement_Eighteen_Coordinate_Exception_Second(Monomer) 
     X_Coordinate = 0
@@ -1361,6 +2170,15 @@ function Movement_Eighteen_Coordinate_Exception_Second(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Eighteen_Coordinate_Exception_Third(Monomer)
+
+Reflects Y into X at boundary for diagonal shift.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
+
 function Movement_Eighteen_Coordinate_Exception_Third(Monomer) 
     X_Coordinate = Lattice_Size - Retrieve_Y_Coordinate(Monomer)
     Y_Coordinate = 0
@@ -1368,12 +2186,32 @@ function Movement_Eighteen_Coordinate_Exception_Third(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+Movement_Eighteen_Coordinate_Exception_Fourth(Monomer)
+
+Reflects X into Y at boundary for diagonal shift.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`
+"""
 function Movement_Eighteen_Coordinate_Exception_Fourth(Monomer) 
     X_Coordinate = 0
     Y_Coordinate = Lattice_Size - Retrieve_X_Coordinate(Monomer)
     Z_Coordinate = Retrieve_Z_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
+
+"""
+Movement_Eighteen_Coordinate(Monomer)
+
+Calculates the new coordinates after a diagonal movement of +0.5 in both X and Y directions.
+
+# Arguments
+- `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+
+# Returns
+- `Tuple{Float64, Float64, Float64}`: The updated coordinates after the diagonal movement in the XY plane.
+"""
 
 function Movement_Eighteen_Coordinate(Monomer) 
     X_Coordinate = Retrieve_X_Coordinate(Monomer) + .5
@@ -1382,7 +2220,27 @@ function Movement_Eighteen_Coordinate(Monomer)
     return X_Coordinate , Y_Coordinate , Z_Coordinate 
 end
 
+"""
+MovementFunctions
 
+A dictionary that maps movement direction labels (as strings) to a list of movement rules. Each rule is represented as a tuple of a condition function and a corresponding movement function.
+
+This structure is used to determine how a monomer should move on an FCC lattice while handling periodic boundary conditions and lattice edge exceptions. The conditions are evaluated in order, and the first condition that returns `true` determines which movement function is applied.
+
+# Structure
+- Keys: `String` labels for each movement direction (e.g., `"One"`, `"Two"`, ..., `"Eighteen"`).
+- Values: A `Vector` of tuples, each containing:
+  - A predicate function `(X, Y, Z) -> Bool` that checks a spatial condition.
+  - A movement function `f(Monomer)` that returns new coordinates based on that condition.
+
+# Example
+```julia
+MovementFunctions["One"] = [
+    ((X, Y, Z) -> X == Lattice_Size, Movement_One_Coordinate_Exception),
+    ((X, Y, Z) -> X == Lattice_Size - 0.5, Movement_One_Coordinate_Exception_Second),
+    ((X, Y, Z) -> true, Movement_One_Coordinate)
+]
+"""
 
 # Define a dictionary mapping movement types to functions and conditions
 const MovementFunctions = Dict(
