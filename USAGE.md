@@ -96,6 +96,23 @@ Here’s what the columns represent in key `.csv` files:
 | Native     | Number of native monomers (N)  |
 | Amyloid    | Number of amyloid monomers (A) |
 
+### `MSD_Data.csv`
+| Column       | Description                                      |
+|--------------|--------------------------------------------------|
+| Timestep     | Simulation timepoint                             |
+| MSD_Monomer  | Average Mean Squared Displacement of all monomers |
+| MSD_Aggregate| Average Mean Squared Displacement of all monomers aggregates    |
+
+
+### `Fibril_Length_Count_Results.csv`
+| Column        | Description                                               |
+|---------------|-----------------------------------------------------------|
+| Fibril_Length | Number of monomers in each fibril                         |
+| Count         | How many fibrils of that length were observed at the end |
+
+
+
+
 ---
 
 ## 🧠 Tips
