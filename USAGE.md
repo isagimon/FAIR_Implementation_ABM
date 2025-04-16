@@ -59,6 +59,8 @@ The parameters below can be configured directly at the top of the `Main_Simulati
 
 ## 📤 Output Files
 
+> All simulation results are saved inside a timestamped folder within the `Data_Collection/` directory. Each run creates a new subdirectory named in the format `Simulation_<timestamp>` (e.g., `Data_Collection/Simulation_2025-04-16_11-08-52_AM/`), containing all output files for that specific run. This ensures results from each simulation are cleanly organized and reproducible.
+
 The simulation generates the following outputs:
 
 - `Simulation_Results.csv`: Tracks oligomer and aggregate counts over time.
