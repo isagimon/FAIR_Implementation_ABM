@@ -29,10 +29,17 @@ After cloning the repository:
 ```bash
 git clone https://github.com/isagimon/FAIR_Implementation_ABM.git
 cd FAIR_Implementation_ABM
-julia Main_Simulation.jl
+julia run_simulation.jl
 ```
 
-The simulation will begin running and output `.csv` data files based on the configuration in `Main_Simulation.jl`.
+This will automatically:
+- Activate the project environment
+- Install any missing dependencies
+- Launch the simulation using `Environment_and_Movement.jl`
+- Load all parameters from `Input_Parameters.csv`
+
+Simulation results will be saved to a timestamped folder inside `Data_Collection/`.
+
 
 ---
 
