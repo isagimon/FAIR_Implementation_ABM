@@ -2873,7 +2873,7 @@ function Amyloid_Oligomer_Lock_Two(Monomer_Amyloid, Desired_Location_Oligomer)
     Unique_Code_Oligomer = Retrieve_Unique_Number_Monomer(Desired_Location_Oligomer)
     Unique_Code_Amyloid = Retrieve_Unique_Number_Monomer(Monomer_Amyloid)
 
-    Key_Array = Key_Array_Locations_and_States()
+    Key_Array = Filter_Oligomer()
 
     # Iterate over all coordinates in the dictionary to find matching oligomers
     @threads for i in 1:length(Key_Array)
@@ -3008,7 +3008,7 @@ function Oligomer_Dissociation(Unique_Number_Oligomer)
     # Retrieve the unique number associated with the monomer directly from the dictionary
 
     # Iterate through all coordinates in the dictionary
-    Key_Array = Key_Array_Locations_and_States()
+    Key_Array = Filter_Oligomer()
     @threads for i in 1:length(Key_Array)
         #for i in 1:length(Key_Array)
         coordinate = Key_Array[i]
@@ -3091,7 +3091,8 @@ function Amyloid_Oligomer_Lock(Monomer_Oligomer, Desired_Location_Amyloid)
     Unique_Code_Amyloid = Retrieve_Unique_Number_Monomer(Desired_Location_Amyloid)
 
     # Iterate through all coordinates in the dictionary
-    Key_Array = Key_Array_Locations_and_States()
+    #Key_Array = Key_Array_Locations_and_States()
+    Key_Array = Filter_Oligomer()
 
     @threads for i in 1:length(Key_Array)
         #for i in 1:length(Key_Array)
