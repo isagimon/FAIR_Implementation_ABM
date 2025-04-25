@@ -768,10 +768,15 @@ function Movement()
 
         #Export_Timestep_Information()
 
-          # Collect data after the timestep
-          oligomers, aggregates = Count_Oligomers_Aggregates()
-          native, amyloid = Count_Native_Amyloid()
-          
+           # Collect data after the timestep
+           oligomer_keys = Filter_Oligomer()
+           aggregate_keys = Filter_Aggregate()
+           native_keys = Filter_Native()
+           amyloid_keys = Filter_Amyloid()
+           
+           oligomers, aggregates = length(oligomer_keys), length(aggregate_keys)
+           native, amyloid = length(native_keys), length(amyloid_keys)
+
           # Save data for this timestep
           Save_Data(timesteps, oligomers, aggregates)
           Save_Data_Two(timesteps, native, amyloid)
@@ -3341,7 +3346,6 @@ function Gather_all_Aggregate_Monomers_Oligomer(Monomer, Type_of_Movement)
 
                     State_New_Location = Retrieve_State_Monomer(New_Location)
 
-                    lock(dict_lock) do
                         if State_New_Location == 0 
                             Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
                         else
@@ -3349,7 +3353,6 @@ function Gather_all_Aggregate_Monomers_Oligomer(Monomer, Type_of_Movement)
                             dictionary_emptied = true  # Set flag to true when dictionary is emptied
                             return  # Exit the thread when the dictionary is emptied
                         end 
-                    end
                     break
                 end
             end
@@ -3415,7 +3418,6 @@ function Gather_all_Aggregate_Monomers_Aggregate(Monomer, Type_of_Movement)
 
                     State_New_Location = Retrieve_State_Monomer(New_Location)
 
-                    lock(dict_lock) do
                         if State_New_Location == 0
                             Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
                         else
@@ -3423,7 +3425,6 @@ function Gather_all_Aggregate_Monomers_Aggregate(Monomer, Type_of_Movement)
                             dictionary_emptied = true  # Set flag to true when dictionary is emptied
                             return  # Exit the thread when the dictionary is emptied
                         end
-                    end
                     break
                 end
             end
@@ -3470,6 +3471,39 @@ function Filter_Aggregate()
 end
 
 """
+Filter_Native()
+
+Filters the Locations_and_States_Dict to return an array of coordinates of Native monomers (state == 1).
+
+# Global variables read
+- `Locations_and_States_Dict`
+
+# Returns
+- `Vector{Tuple{Float64, Float64, Float64}}`: An array of coordinates of Native monomers.
+"""
+
+function Filter_Native()
+    return [k for (k, (state, _)) in Locations_and_States_Dict if state == 1]
+end
+
+"""
+Filter_Amyloid()
+
+Filters the Locations_and_States_Dict to return an array of coordinates of Amyloid-prone monomers (state == 2).
+
+# Global variables read
+- `Locations_and_States_Dict`
+
+# Returns
+- `Vector{Tuple{Float64, Float64, Float64}}`: An array of coordinates of Amyloid-prone monomers.
+"""
+
+function Filter_Amyloid()
+    return [k for (k, (state, _)) in Locations_and_States_Dict if state == 2]
+end
+
+
+"""
 Filter_Monomers()
 
 Filters the Locations_and_States_Dict to return an array of coordinates of Monomers (state == 1 or 2).
@@ -3501,18 +3535,23 @@ end
 """
 Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
 
-Appends a possible movement to the Possible_Coordinate_Movements_Dict.
+Appends a possible movement to the Possible_Coordinate_Movements_Dict in a thread-safe manner using a lock.
 
 # Arguments
-- `Current_Coordinate::Tuple{Float64, Float64, Float64}`: The current coordinates.
-- `New_Location::Tuple{Float64, Float64, Float64}`: The new coordinates.
+- `Current_Coordinate::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
+- `New_Location::Tuple{Float64, Float64, Float64}`: The new target coordinates for the movement.
 
 # Global variables modified
 - `Possible_Coordinate_Movements_Dict`
+
+# Global variables read
+- `dict_lock`: A ReentrantLock used to ensure safe concurrent writes.
 """
 
 function Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
+    lock(dict_lock) do
     Possible_Coordinate_Movements_Dict[Current_Coordinate] = New_Location
+    end
 end
 
 """
