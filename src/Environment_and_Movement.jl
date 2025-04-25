@@ -3349,7 +3349,6 @@ function Gather_all_Aggregate_Monomers_Oligomer(Monomer, Type_of_Movement)
                         if State_New_Location == 0 
                             Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
                         else
-                            Empty_Possible_Coordinates_Movement_Dict()
                             Threads.atomic_or!(dictionary_emptied, true) 
                  
                         end 
@@ -3424,7 +3423,6 @@ function Gather_all_Aggregate_Monomers_Aggregate(Monomer, Type_of_Movement)
                         if State_New_Location == 0
                             Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
                         else
-                            Empty_Possible_Coordinates_Movement_Dict()
                             Threads.atomic_or!(dictionary_emptied, true)  # Set flag to true when dictionary is emptied
                             
                         end
