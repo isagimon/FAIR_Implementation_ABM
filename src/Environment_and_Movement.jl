@@ -3330,7 +3330,7 @@ function Gather_all_Aggregate_Monomers_Oligomer(Monomer, Type_of_Movement)
     Movement_Options = MovementFunctions[Type_of_Movement]
     # Filter the dictionary to get only entries with state == 3
     relevant_keys_array = Filter_Oligomer()
-    dictionary_emptied = false  # Flag to check if dictionary has been emptied
+    dictionary_emptied = Threads.Atomic{Bool}(false) # Flag to check if dictionary has been emptied
 
     # Now iterate over the filtered collection with relevant keys only
     @threads for i in 1:length(relevant_keys_array)
@@ -3350,8 +3350,8 @@ function Gather_all_Aggregate_Monomers_Oligomer(Monomer, Type_of_Movement)
                             Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
                         else
                             Empty_Possible_Coordinates_Movement_Dict()
-                            dictionary_emptied = true  # Set flag to true when dictionary is emptied
-                            return  # Exit the thread when the dictionary is emptied
+                            Threads.atomic_or!(dictionary_emptied, true) 
+                 
                         end 
                     break
                 end
@@ -3360,11 +3360,14 @@ function Gather_all_Aggregate_Monomers_Oligomer(Monomer, Type_of_Movement)
     end
 
     # Perform aggregate movement only if the dictionary was not emptied
-    if !dictionary_emptied
-        println("This is Possible_Coordinate_Movements_Dict: $Possible_Coordinate_Movements_Dict")
+    if dictionary_emptied[]
+        Empty_Possible_Coordinates_Movement_Dict()
+    else
         Move_Aggregate(Monomer)
     end
+    
 end
+
 
 """
 Gather_all_Aggregate_Monomers_Aggregate(Monomer, Type_of_Movement)
@@ -3402,7 +3405,7 @@ function Gather_all_Aggregate_Monomers_Aggregate(Monomer, Type_of_Movement)
     Movement_Options = MovementFunctions[Type_of_Movement]
     # Filter the dictionary to get only entries with state == 4
     relevant_keys_array = Filter_Aggregate()
-    dictionary_emptied = false  # Flag to check if dictionary has been emptied
+    dictionary_emptied = Threads.Atomic{Bool}(false)  # Flag to check if dictionary has been emptied
 
     # Now iterate over the filtered collection with relevant keys only
     @threads for i in 1:length(relevant_keys_array)
@@ -3422,8 +3425,8 @@ function Gather_all_Aggregate_Monomers_Aggregate(Monomer, Type_of_Movement)
                             Appending_Location_Possible_Coordinate_Dict(Current_Coordinate, New_Location)
                         else
                             Empty_Possible_Coordinates_Movement_Dict()
-                            dictionary_emptied = true  # Set flag to true when dictionary is emptied
-                            return  # Exit the thread when the dictionary is emptied
+                            Threads.atomic_or!(dictionary_emptied, true)  # Set flag to true when dictionary is emptied
+                            
                         end
                     break
                 end
@@ -3431,12 +3434,13 @@ function Gather_all_Aggregate_Monomers_Aggregate(Monomer, Type_of_Movement)
         end
     end
 
-    # Perform aggregate movement only if the dictionary was not emptied
-    if !dictionary_emptied
+    if dictionary_emptied[]
+        Empty_Possible_Coordinates_Movement_Dict()
+    else
         Move_Aggregate(Monomer)
     end
+    
 end
-
 
 """
 Filter_Oligomer()
