@@ -22,20 +22,28 @@ const SPHERE_ID_RANGE      = 500_000:2_000_000
 # Global Simulation State
 ###############
 
+# Dictionary mapping 3D coordinates (Tuple{Float64, Float64, Float64}) to a Tuple containing the state (Int) and a unique identifier (Int)
 # Stores the current state of all lattice locations
 global Locations_and_States_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Int, Int}}()
 
+# Possible_Sphere_Coordinates_Set: Set to store coordinates of potential sphere (crowder) locations during generation.
 # Stores possible coordinates used to assemble a spherical crowder
 global Possible_Sphere_Coordinates_Set = Dict{Tuple{Float64, Float64, Float64}, Nothing}()
 
+# Initial_Locations_and_States_Dict: Dictionary to store initial locations and states of monomers (Native and Amyloid-prone).
 # Records the initial state of all lattice locations for later reference
 global Initial_Locations_and_States_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Int, Int}}()
 
+# used_centers: Set to keep track of sphere center coordinates to avoid overlap.
 # Tracks centers that have already been used for sphere generation
 global used_centers = Set{Tuple{Float64, Float64, Float64}}()
 
 # Unique ID pools
+
+# Sphere_Unique_Numbers: Array of unique identifiers for sphere crowders.
 global Sphere_Unique_Numbers = collect(SPHERE_ID_RANGE)
+
+# Monomer_Unique_Numbers: Array of unique identifiers for monomers.
 global Monomer_Unique_Numbers = collect(MONOMER_ID_RANGE)
 
 """
@@ -100,24 +108,40 @@ file_path = "/Users/isabellagimon/Desktop/FAIR_Implementation_ABM/Input_Paramete
 Parameters = load_csv_parameters(file_path)
 
 # Assign individual variables
-Lattice_Size = Parameters["Lattice_Size"]
-Max_NumberMonomers_Native = Parameters["Max_NumberMonomers_Native"]
-Max_NumberMonomers_Amyloid = Parameters["Max_NumberMonomers_Amyloid"]
-Obstacle_Radius = Parameters["Obstacle_Radius"]
-Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"]
-Obstacle = Parameters["Spheres?"]
-Sphere_Volume = Parameters["Sphere_Volume"]
+Lattice_Size = Parameters["Lattice_Size"]                                 # Size of the cubic lattice (Lattice_Size x Lattice_Size x Lattice_Size)
+Max_NumberMonomers_Native = Parameters["Max_NumberMonomers_Native"]       # Maximum number of native monomers
+Max_NumberMonomers_Amyloid = Parameters["Max_NumberMonomers_Amyloid"]     # Maximum number of amyloid-prone monomers
+Obstacle_Radius = Parameters["Obstacle_Radius"]                           # Radius of spherical crowders (if Obstacle is true)
+Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"] # Concentration of spherical crowders
+Obstacle = Parameters["Spheres?"]                                         # Boolean to enable/disable spherical crowders
+Sphere_Volume = Parameters["Sphere_Volume"]                               # Volume of a single sphere (in lattice units)
+
 
 # Debugging: Print all parameters
 println("Loaded Parameters: ", Parameters)
 
 """
-    Generate_Coordinates(Lattice_Size::Int)
+Generate_Coordinates(Lattice_Size::Int)
 
-Generates the 3D FCC lattice of coordinates and assigns initial states to monomers and spheres based on provided parameters.
+Generates the 3D lattice coordinates and initializes the Locations_and_States_Dict.
+If `Obstacle` is true, it also generates spherical crowders. Finally, it randomly
+assigns locations to native and amyloid-prone monomers and copies the initial
+locations to Initial_Locations_and_States_Dict.
 
 # Arguments
 - `Lattice_Size`: Integer value for the size of the lattice in each dimension.
+
+# Global variables modified
+- `Locations_and_States_Dict`
+- `Possible_Sphere_Coordinates_Set` (conditionally)
+- `Initial_Locations_and_States_Dict`
+
+# Calls
+- `Add_Position`
+- `Differentiate_Sphere_Crowder_Radius` (conditionally)
+- `Randomly_Assigns_Location_Monomers_Native`
+- `Randomly_Assigns_Location_Monomers_Amyloid`
+- `Copy_Original_Location`
 """
 
 
@@ -145,9 +169,17 @@ function Generate_Coordinates(Lattice_Size)
 end
 
 """
-    Copy_Original_Location()
+Copy_Original_Location()
 
-Stores a snapshot of the initial state and positions of native and amyloid monomers in the global `Initial_Locations_and_States_Dict`.
+Copies the locations and states of native and amyloid-prone monomers from
+Locations_and_States_Dict to Initial_Locations_and_States_Dict. This is used
+to store the initial conditions of the simulation.
+
+# Global variables modified
+- `Initial_Locations_and_States_Dict`
+
+# Assumptions
+- `Locations_and_States_Dict` is populated with monomer locations and states.
 """
 
 function Copy_Original_Location()
