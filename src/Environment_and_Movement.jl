@@ -34,13 +34,13 @@ include("Agents.jl")
 ##########################
 
 # Simulation controls
-const MAX_NumberMovements        = Float64(Parameters["MAX_NumberMovements"])
-const Native_to_Amyloid         = Float64(Parameters["Native_to_Amyloid"])
-const Amyloid_to_Native         = Float64(Parameters["Amyloid_to_Native"])
-const Oligomer_Formation        = Float64(Parameters["Oligomer_Formation"])
-const Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rate"])
-const Fibril_Formation          = Float64(Parameters["Fibril_Formation"])
-const Fibril_Growth             = Float64(Parameters["Fibril_Growth"])
+const MAX_NumberMovements        = Float64(Parameters["MAX_NumberMovements"])        # Maximum number of simulation timesteps
+const Native_to_Amyloid         = Float64(Parameters["Native_to_Amyloid"])           # Probability of native to amyloid transition, P(Native → Amyloid)
+const Amyloid_to_Native         = Float64(Parameters["Amyloid_to_Native"])           # Probability of amyloid to native transition, P(Amyloid → Native)
+const Oligomer_Formation        = Float64(Parameters["Oligomer_Formation"])          # Probability of oligomer formation, P(2 Amyloid → Oligomer)
+const Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rate"]) # Probability of oligomer dissociation, P(Oligomer → monomers)
+const Fibril_Formation          = Float64(Parameters["Fibril_Formation"])            # Probability of fibril formation, P(Amyloid + Oligomer → Fibril)
+const Fibril_Growth             = Float64(Parameters["Fibril_Growth"])               # Probability of fibril growth, P(Fibril + Amyloid → Grow)
 const Directory                 = String(Parameters["Directory"])
 
 # Derived parameter
@@ -50,28 +50,28 @@ global max_fibril_size = Max_NumberMonomers_Amyloid + Max_NumberMonomers_Native
 # GLOBAL STATE VARIABLES
 ##########################
 
-global timesteps = 0
-global CurrentTimeStep = 0
-global Fibril_Length_Count
+global timesteps = 0            # Current timestep counter
+global CurrentTimeStep = 0      # Counter for exporting timestep information
+global Fibril_Length_Count      # DataFrame to store fibril length counts
 
 # Movement directions
 const Possible_Movement_Options = [
     "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
     "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
     "Eighteen", "None"
-]
+]                               # Array of possible movement options
 
 # Movement and tracking
-global Possible_Coordinate_Movements_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Float64, Float64, Float64}}()
-global available_numbers = collect(1:200000)
+global Possible_Coordinate_Movements_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Float64, Float64, Float64}}() # Dictionary to store possible coordinate movements
+global available_numbers = collect(1:200000)    # Array of available unique numbers
 
 ##########################
 # DATA COLLECTION STRUCTURES
 ##########################
 
-results_df       = DataFrame(Timestep = Int[], Oligomers = Int[], Aggregates = Int[])
-results_df_two   = DataFrame(Timestep = Int[], Native = Int[], Amyloid = Int[])
-msd_data         = DataFrame(Timestep = Int[], MSD_Monomer = Float64[], MSD_Aggregate = Float64[])
+results_df       = DataFrame(Timestep = Int[], Oligomers = Int[], Aggregates = Int[])                # DataFrame to store simulation results
+results_df_two   = DataFrame(Timestep = Int[], Native = Int[], Amyloid = Int[])                      # DataFrame to store native and amyloid counts
+msd_data         = DataFrame(Timestep = Int[], MSD_Monomer = Float64[], MSD_Aggregate = Float64[])   # DataFrame to store MSD data
 
 ##########################
 # THREAD SAFETY
