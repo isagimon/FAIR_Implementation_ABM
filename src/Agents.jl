@@ -3,6 +3,36 @@ using Plots
 using CSV
 using DataFrames
 
+"""
+Module: Agents.jl
+
+Handles the initialization and management of agents (monomers and crowders) within a 3D FCC lattice environment.
+Defines the structure of the simulation space, state variables, and random assignment of monomers and crowders.
+
+Implements FAIR principles:
+
+- **Findable**: Clear structure for agent generation and unique identifiers.
+- **Accessible**: Simulation parameters and initial conditions are externally loadable via CSV files.
+- **Interoperable**: Built using Julia-native types and standard libraries.
+- **Reusable**: Modular functions with transparent global variables, enabling reproducibility across simulations.
+
+Key Features:
+- Supports initialization of Native (N), Amyloid-prone (A) monomers, Oligomers (O), and Fibrils (F).
+- Crowders are modeled as static spheres generated at random locations.
+- Periodic boundary conditions incorporated for crowder creation.
+- All agents are tracked with unique numerical identifiers.
+
+Authors: Santiago Schnell; Conner Sandefur; Isabella Gimon
+Dependencies: 
+- Random
+- Plots
+- CSV
+- DataFrames
+
+License: http://www.apache.org/licenses/LICENSE-2.0
+"""
+
+
 ###############
 # Constants
 ###############
@@ -22,56 +52,50 @@ const SPHERE_ID_RANGE      = 500_000:2_000_000
 # Global Simulation State
 ###############
 
-# Dictionary mapping 3D coordinates (Tuple{Float64, Float64, Float64}) to a Tuple containing the state (Int) and a unique identifier (Int)
-# Stores the current state of all lattice locations
+# Dictionary mapping 3D coordinates (Tuple{Float64, Float64, Float64}) to a Tuple containing (State, UniqueID)
+# Stores the current state of the 3D lattice.
 global Locations_and_States_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Int, Int}}()
 
-# Possible_Sphere_Coordinates_Set: Set to store coordinates of potential sphere (crowder) locations during generation.
-# Stores possible coordinates used to assemble a spherical crowder
+# Temporary storage for potential sphere crowder coordinates.
 global Possible_Sphere_Coordinates_Set = Dict{Tuple{Float64, Float64, Float64}, Nothing}()
 
-# Initial_Locations_and_States_Dict: Dictionary to store initial locations and states of monomers (Native and Amyloid-prone).
-# Records the initial state of all lattice locations for later reference
+# Snapshot of initial monomer locations (before simulation dynamics).
 global Initial_Locations_and_States_Dict = Dict{Tuple{Float64, Float64, Float64}, Tuple{Int, Int}}()
 
-# used_centers: Set to keep track of sphere center coordinates to avoid overlap.
-# Tracks centers that have already been used for sphere generation
+# Used centers for crowder spheres to avoid overlapping.
 global used_centers = Set{Tuple{Float64, Float64, Float64}}()
 
-# Unique ID pools
-
-# Sphere_Unique_Numbers: Array of unique identifiers for sphere crowders.
+# Pools of unique IDs
 global Sphere_Unique_Numbers = collect(SPHERE_ID_RANGE)
-
-# Monomer_Unique_Numbers: Array of unique identifiers for monomers.
 global Monomer_Unique_Numbers = collect(MONOMER_ID_RANGE)
 
 """
     load_csv_parameters(file_path::String) -> Dict
 
 Loads simulation parameters from a CSV file into a dictionary.
-The CSV should contain at least two columns: parameter names and values.
+
+The input CSV should have two columns: one for parameter names and one for their values.  
+Automatically detects Float64, Bool (`TRUE`/`FALSE`), or String values.
 
 # Arguments
-- `file_path`: Path to the CSV file.
+- `file_path::String`: Path to the CSV file.
 
 # Returns
-- A dictionary mapping parameter names (as strings) to values (parsed as Float64, Bool, or String).
-"""
+- `Dict{String, Any}`: Dictionary mapping parameter names to their corresponding parsed values.
 
+# Behavior
+- Standardizes column names to remove hidden characters.
+- Ensures selected fields (e.g., "Lattice_Size") are stored as integers.
+"""
 function load_csv_parameters(file_path::String)
-    # Read the CSV file into a DataFrame
     df = CSV.read(file_path, DataFrame)
 
-    # Standardize column names to remove hidden characters
     rename!(df, strip.(names(df)))
     println("Updated column names: ", names(df))
 
-    # Define column names
-    param_col = names(df)[1]  # First column for parameter names
-    value_col = names(df)[2]  # Second column for parameter values
+    param_col = names(df)[1]
+    value_col = names(df)[2]
 
-    # Create a dictionary from the first two columns
     params = Dict(
         strip(row[param_col]) => 
         try
@@ -88,7 +112,6 @@ function load_csv_parameters(file_path::String)
         for row in eachrow(df)
     )
 
-    # Ensure integer values for specific parameters
     for key in ["Lattice_Size", "Max_NumberMonomers_Native", "Max_NumberMonomers_Amyloid", "Obstacle_Radius", "MAX_NumberMovements"]
         if haskey(params, key)
             params[key] = Int(params[key])
@@ -99,52 +122,48 @@ function load_csv_parameters(file_path::String)
     return params
 end
 
-
-
 # Path to the input parameters CSV file
 file_path = "/Users/isabellagimon/Desktop/FAIR_Implementation_ABM/Input_Parameters.csv"
 
 # Load parameters
 Parameters = load_csv_parameters(file_path)
 
-# Assign individual variables
+# Assign simulation parameters
 Lattice_Size = Parameters["Lattice_Size"]                                 # Size of the cubic lattice (Lattice_Size x Lattice_Size x Lattice_Size)
 Max_NumberMonomers_Native = Parameters["Max_NumberMonomers_Native"]       # Maximum number of native monomers
 Max_NumberMonomers_Amyloid = Parameters["Max_NumberMonomers_Amyloid"]     # Maximum number of amyloid-prone monomers
-Obstacle_Radius = Parameters["Obstacle_Radius"]                           # Radius of spherical crowders (if Obstacle is true)
-Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"] # Concentration of spherical crowders
-Obstacle = Parameters["Spheres?"]                                         # Boolean to enable/disable spherical crowders
-Sphere_Volume = Parameters["Sphere_Volume"]                               # Volume of a single sphere (in lattice units)
+Obstacle_Radius = Parameters["Obstacle_Radius"]                           # Radius of spherical crowders
+Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"] # Crowder concentration
+Obstacle = Parameters["Spheres?"]                                         # Boolean: Enable/Disable crowders
+Sphere_Volume = Parameters["Sphere_Volume"]                               # Volume of a sphere
 
-
-# Debugging: Print all parameters
+# Debugging: Print loaded parameters
 println("Loaded Parameters: ", Parameters)
 
 """
-Generate_Coordinates(Lattice_Size::Int)
+    Generate_Coordinates(Lattice_Size::Int)
 
-Generates the 3D lattice coordinates and initializes the Locations_and_States_Dict.
-If `Obstacle` is true, it also generates spherical crowders. Finally, it randomly
-assigns locations to native and amyloid-prone monomers and copies the initial
-locations to Initial_Locations_and_States_Dict.
+Generates a complete 3D face-centered cubic lattice.
+
+Populates the global `Locations_and_States_Dict` with all corner and face-centered points
+at each unit cell position.  
+Also randomly assigns monomer states (Native and Amyloid-prone) and optionally generates spherical crowders.
 
 # Arguments
-- `Lattice_Size`: Integer value for the size of the lattice in each dimension.
+- `Lattice_Size::Int`: The number of unit cells per axis (X, Y, Z).
 
 # Global variables modified
 - `Locations_and_States_Dict`
-- `Possible_Sphere_Coordinates_Set` (conditionally)
 - `Initial_Locations_and_States_Dict`
+- `Possible_Sphere_Coordinates_Set` (if Obstacle enabled)
 
 # Calls
 - `Add_Position`
-- `Differentiate_Sphere_Crowder_Radius` (conditionally)
+- `Differentiate_Sphere_Crowder_Radius`
 - `Randomly_Assigns_Location_Monomers_Native`
 - `Randomly_Assigns_Location_Monomers_Amyloid`
 - `Copy_Original_Location`
 """
-
-
 function Generate_Coordinates(Lattice_Size)
     global Locations_and_States_Dict
 
@@ -153,37 +172,36 @@ function Generate_Coordinates(Lattice_Size)
             for Z in 0:(Lattice_Size - 1)
                 State = 0
                 Unique_Number = 0
-
-                # Add corner positions for each unit cell
                 Add_Position(X, Y, Z, State, Unique_Number)
             end
         end
     end
+
     if Obstacle == true
-         Differentiate_Sphere_Crowder_Radius()
+        Differentiate_Sphere_Crowder_Radius()
     end
     Randomly_Assigns_Location_Monomers_Native()
     Randomly_Assigns_Location_Monomers_Amyloid()
     Copy_Original_Location()
- 
 end
 
 """
-Copy_Original_Location()
+    Copy_Original_Location()
 
-Copies the locations and states of native and amyloid-prone monomers from
-Locations_and_States_Dict to Initial_Locations_and_States_Dict. This is used
-to store the initial conditions of the simulation.
+Copies all Native and Amyloid-prone monomer coordinates from `Locations_and_States_Dict`
+into `Initial_Locations_and_States_Dict`.
+
+This function preserves a copy of the initial state of the simulation,
+before any dynamics (movement, aggregation) occur.
 
 # Global variables modified
 - `Initial_Locations_and_States_Dict`
 
-# Assumptions
-- `Locations_and_States_Dict` is populated with monomer locations and states.
+# Notes
+- Only state values 1 (Native) and 2 (Amyloid-prone) are copied.
 """
-
 function Copy_Original_Location()
-    global Initial_Locations_and_States_Dict  # Ensure it modifies the global variable
+    global Initial_Locations_and_States_Dict
 
     for (location, (state, unique_number)) in Locations_and_States_Dict
         if state == NativeState_Value || state == AmyloidProne_Value
@@ -192,22 +210,25 @@ function Copy_Original_Location()
     end
 end
 
+
+
 """
     Add_Position(X, Y, Z, State, Unique_Number)
 
-Adds all face- and corner-centered positions for a unit cell at coordinate (X, Y, Z) into the global `Locations_and_States_Dict`.
+Adds all face-centered and corner-centered coordinates for a unit cell at (X, Y, Z)
+into the global `Locations_and_States_Dict`.
 
 # Arguments
-- `X`, `Y`, `Z`: Integer coordinates of the unit cell origin.
-- `State`: The initial state (typically 0).
-- `Unique_Number`: The initial unique identifier.
+- `X, Y, Z`: Integer coordinates defining the origin of the unit cell.
+- `State`: Initial state assigned to all created positions (typically 0).
+- `Unique_Number`: Initial unique number assigned (typically 0).
+
+# Behavior
+- Populates 14 points per unit cell: 8 corners + 6 face centers.
 """
-
-
 function Add_Position(X, Y, Z, State, Unique_Number)
     global Locations_and_States_Dict
 
-    # Define all corner and face positions to be added to the dictionary
     positions = [
         First_Corner_Position(X, Y, Z),
         Second_Corner_Position(X, Y, Z),
@@ -230,12 +251,15 @@ function Add_Position(X, Y, Z, State, Unique_Number)
     end
 end
 
+######################
+# Corner Coordinates
+######################
+
 """
     First_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the first corner of the unit cell, which corresponds to the origin (X, Y, Z).
+Returns the coordinate for the first corner of the FCC unit cell: the base origin (X, Y, Z).
 """
-
 function First_Corner_Position(X, Y, Z)
     return X, Y, Z
 end
@@ -243,9 +267,8 @@ end
 """
     Second_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the second corner of the unit cell, offset by +1 in the X direction.
+Returns the coordinate of the second corner, displaced by +1 along the X-axis.
 """
-
 function Second_Corner_Position(X, Y, Z)
     return X + 1, Y, Z
 end
@@ -253,9 +276,8 @@ end
 """
     Third_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the third corner of the unit cell, offset by +1 in the Y direction.
+Returns the coordinate of the third corner, displaced by +1 along the Y-axis.
 """
-
 function Third_Corner_Position(X, Y, Z)
     return X, Y + 1, Z
 end
@@ -263,9 +285,8 @@ end
 """
     Fourth_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the fourth corner of the unit cell, offset by +1 in the Z direction.
+Returns the coordinate of the fourth corner, displaced by +1 along the Z-axis.
 """
-
 function Fourth_Corner_Position(X, Y, Z)
     return X, Y, Z + 1
 end
@@ -273,9 +294,8 @@ end
 """
     Fifth_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the fifth corner, offset by +1 in both X and Y directions.
+Returns the coordinate at (X+1, Y+1, Z), a corner displaced along X and Y axes.
 """
-
 function Fifth_Corner_Position(X, Y, Z)
     return X + 1, Y + 1, Z
 end
@@ -283,9 +303,8 @@ end
 """
     Sixth_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the sixth corner, offset by +1 in X and Z directions.
+Returns the coordinate at (X+1, Y, Z+1), a corner displaced along X and Z axes.
 """
-
 function Sixth_Corner_Position(X, Y, Z)
     return X + 1, Y, Z + 1
 end
@@ -293,9 +312,8 @@ end
 """
     Seventh_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the seventh corner, offset by +1 in Y and Z directions.
+Returns the coordinate at (X, Y+1, Z+1), a corner displaced along Y and Z axes.
 """
-
 function Seventh_Corner_Position(X, Y, Z)
     return X, Y + 1, Z + 1
 end
@@ -303,81 +321,83 @@ end
 """
     Eighth_Corner_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the eighth corner, offset by +1 in X, Y, and Z directions.
+Returns the coordinate at (X+1, Y+1, Z+1), displaced along all three axes.
 """
-
 function Eighth_Corner_Position(X, Y, Z)
     return X + 1, Y + 1, Z + 1
 end
 
+######################
+# Face Coordinates
+######################
+
 """
     First_Face_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the first face-centered position, centered between X and Y directions.
+Returns the coordinate at the center between (X, Y) plane: mid-point face center.
 """
-
-function First_Face_Position(X, Y, Z) #Face-centered along each axis
-    return X + 0.5, Y + .5, Z
+function First_Face_Position(X, Y, Z)
+    return X + 0.5, Y + 0.5, Z
 end
 
 """
     Second_Face_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the second face-centered position, centered between Y and Z directions.
+Returns the coordinate at the center between (Y, Z) plane: mid-point face center.
 """
-
-function Second_Face_Position(X, Y, Z) #Face-centered along each axis
-    return X, Y + 0.5, Z + .5
+function Second_Face_Position(X, Y, Z)
+    return X, Y + 0.5, Z + 0.5
 end
 
 """
     Third_Face_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the third face-centered position, centered between X and Z directions.
+Returns the coordinate at the center between (X, Z) plane: mid-point face center.
 """
- 
-function Third_Face_Position(X, Y, Z) #Face-centered along each axis
-    return X + .5, Y, Z + 0.5
+function Third_Face_Position(X, Y, Z)
+    return X + 0.5, Y, Z + 0.5
 end
 
 """
     Fourth_Face_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the fourth face-centered position, located at the top face in Z.
+Returns the coordinate centered on the top face (+Z direction).
 """
-
-function Fourth_Face_Position(X, Y, Z) #Opposite Faces
-    return X + .5, Y + 0.5, Z + 1
+function Fourth_Face_Position(X, Y, Z)
+    return X + 0.5, Y + 0.5, Z + 1
 end
 
 """
     Fifth_Face_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the fifth face-centered position, located at the front face in Y.
+Returns the coordinate centered on the front face (+Y direction).
 """
-
-function Fifth_Face_Position(X, Y, Z)  #Opposite Faces
-    return X + 0.5, Y + 1, Z + .5
+function Fifth_Face_Position(X, Y, Z)
+    return X + 0.5, Y + 1, Z + 0.5
 end
 
 """
     Sixth_Face_Position(X, Y, Z) -> Tuple
 
-Returns the coordinate of the sixth face-centered position, located at the right face in X.
+Returns the coordinate centered on the right face (+X direction).
 """
-
-function Sixth_Face_Position(X, Y, Z)  #Opposite Faces
-    return X + 1, Y + .5, Z + 0.5
+function Sixth_Face_Position(X, Y, Z)
+    return X + 1, Y + 0.5, Z + 0.5
 end
 
 """
     Randomly_Assigns_Location_Monomers_Native()
 
-Randomly assigns native monomer state (1) to available lattice positions.
-The number of assignments is determined by `Max_NumberMonomers_Native`.
-"""
+Randomly assigns the Native monomer state (1) to unoccupied lattice sites.
 
-# Function to assign states randomly to native monomers
+The number of monomers assigned is controlled by `Max_NumberMonomers_Native`.
+
+# Global variables modified
+- `Locations_and_States_Dict`
+
+# Behavior
+- Picks random empty coordinates until desired number is reached.
+"""
 function Randomly_Assigns_Location_Monomers_Native()
     global Locations_and_States_Dict
     println("We are in Randomly_Assigns_Location_Monomers_Native")
@@ -399,11 +419,13 @@ end
 """
     Randomly_Assigns_Location_Monomers_Amyloid()
 
-Randomly assigns amyloid-prone monomer state (2) to available lattice positions.
-The number of assignments is determined by `Max_NumberMonomers_Amyloid`.
-"""
+Randomly assigns the Amyloid-prone monomer state (2) to unoccupied lattice sites.
 
-# Function to assign states randomly to amyloid monomers
+The number of monomers assigned is controlled by `Max_NumberMonomers_Amyloid`.
+
+# Global variables modified
+- `Locations_and_States_Dict`
+"""
 function Randomly_Assigns_Location_Monomers_Amyloid()
     global Locations_and_States_Dict
     println("We are in Randomly_Assigns_Location_Monomers_Amyloid")
@@ -425,162 +447,148 @@ end
 """
     Assigns_State_Monomer_Native(Location::Tuple)
 
-Assigns a native state (1) and a unique identifier to the specified lattice coordinate.
+Assigns the Native monomer state (1) and a random unique ID to a given coordinate.
 
 # Arguments
-- `Location`: Tuple representing (x, y, z) coordinate.
-"""
+- `Location::Tuple`: (X, Y, Z) coordinate.
 
-# Functions to assign states to specific coordinates
+# Global variables modified
+- `Locations_and_States_Dict`
+"""
 function Assigns_State_Monomer_Native(Location)
     global Locations_and_States_Dict
     Unique_Number = Randomly_Choosing_Unique_Number_Monomer()
-    
-    # Assign state as Native and keep the unique number
     Locations_and_States_Dict[Location] = (NativeState_Value, Unique_Number)
 end
 
 """
     Assigns_State_Monomer_Amyloid(Location::Tuple)
 
-Assigns an amyloid-prone state (2) and a unique identifier to the specified lattice coordinate.
+Assigns the Amyloid-prone monomer state (2) and a random unique ID to a given coordinate.
 
 # Arguments
-- `Location`: Tuple representing (x, y, z) coordinate.
+- `Location::Tuple`: (X, Y, Z) coordinate.
 """
-
 function Assigns_State_Monomer_Amyloid(Location)
     global Locations_and_States_Dict
     Unique_Number = Randomly_Choosing_Unique_Number_Monomer()
-    # Assign state as Native and keep the unique number
     Locations_and_States_Dict[Location] = (AmyloidProne_Value, Unique_Number)
 end
 
 """
     Randomly_Choosing_Unique_Number_Monomer() -> Int
 
-Returns a randomly selected, unused monomer unique identifier.
-Removes the identifier from the pool to avoid duplication.
+Selects and removes a unique ID from the monomer pool.
 
 # Returns
-- A unique integer identifier for a monomer.
-"""
+- An integer unique identifier.
 
+# Behavior
+- Ensures IDs are not reused by deleting used ones.
+"""
 function Randomly_Choosing_Unique_Number_Monomer()
-    if length(Monomer_Unique_Numbers) == 0
-        error("No more unique numbers available!")
+    if isempty(Monomer_Unique_Numbers)
+        error("No more unique monomer IDs available!")
     end
 
-    # Randomly select and remove a number from the available list
     idx = rand(1:length(Monomer_Unique_Numbers))
     UniqueCode = Monomer_Unique_Numbers[idx]
-    deleteat!(Monomer_Unique_Numbers, idx)  # Remove the selected number to ensure uniqueness
+    deleteat!(Monomer_Unique_Numbers, idx)
     
     return UniqueCode
 end
 
-#----------Sphere Crowder----------------------
+# --- Sphere Crowder Functions (Summary) ---
+
 """
     Differentiate_Sphere_Crowder_Radius()
 
-Calls the appropriate sphere generation routine based on the obstacle radius parameter.
-"""
+Chooses the sphere generation method based on radius parameter.
 
+# Behavior
+- Calls `Generate_Spherical_Crowders_Radius_0()` if radius = 0.
+- Otherwise, calls `Generate_Spherical_Crowders()`.
+"""
 function Differentiate_Sphere_Crowder_Radius()
     if Obstacle_Radius == 0
         Generate_Spherical_Crowders_Radius_0()
     else
         Generate_Spherical_Crowders()
     end
-
 end
-
 
 """
     Generate_Spherical_Crowders_Radius_0()
 
-Generates spherical crowders of radius 0 by placing non-overlapping spheres in the lattice.
-The number of spheres is determined by the target occupied fraction.
+Generates spherical crowders of radius zero (single occupied lattice points).
 """
-
 function Generate_Spherical_Crowders_Radius_0()
-    println("We are in the funciton Generate_Spherical_Crowders_Radius_1")
+    println("We are in the function Generate_Spherical_Crowders_Radius_0")
 
-    # Determine the target number of spheres to create
     target_spheres = Calculate_Target_Number_of_Spheres()
     generated_spheres = 0
 
-    # Generate spheres until we reach the target count
     while generated_spheres < target_spheres
-        # Attempt to generate a new sphere
         success = Making_Spheres_Radius_0()
-
         if success
             generated_spheres += 1
             println("Sphere #$generated_spheres created successfully.")
-        else
-            #println("Failed to create a sphere; retrying.")
         end
     end
-    println("Finished generating spheres. Total spheres created: $generated_spheres.")
 
+    println("Finished generating spheres. Total spheres created: $generated_spheres.")
 end
 
 """
     Making_Spheres_Radius_0() -> Bool
 
-Attempts to place a single sphere crowder at a randomly selected valid lattice coordinate.
+Attempts to assign a sphere crowder at a random empty coordinate.
 
 # Returns
-- `true` if the sphere was successfully placed, `false` otherwise.
+- `true` if successful, `false` if the site was already occupied.
 """
-
 function Making_Spheres_Radius_0()
     global Locations_and_States_Dict
     keys_list = collect(keys(Locations_and_States_Dict))
 
-        Random_Index = rand(1:length(keys_list))
-        Random_Location = keys_list[Random_Index]
-        State, _ = Locations_and_States_Dict[Random_Location]
+    Random_Index = rand(1:length(keys_list))
+    Random_Location = keys_list[Random_Index]
+    State, _ = Locations_and_States_Dict[Random_Location]
 
-        if State == 0
-           Sphere_Unique_Number = Randomly_Choose_Unique_Number_Sphere()
-           Assigns_State_Monomer_Sphere(Random_Location,  Sphere_Unique_Number)
-           return true
-        else 
-            return false
-        end
+    if State == 0
+        Sphere_Unique_Number = Randomly_Choose_Unique_Number_Sphere()
+        Assigns_State_Monomer_Sphere(Random_Location, Sphere_Unique_Number)
+        return true
+    else 
+        return false
+    end
 end
+
+
 
 """
     Generate_Spherical_Crowders()
 
 Places spherical crowders of arbitrary radius into the lattice using a composite sphere construction routine.
+
+# Behavior
+- Calls `Calling_Sphere_Coordinate_Functions()` iteratively until the desired number of spheres is generated.
+- Each sphere occupies unoccupied lattice sites within a defined radius.
 """
-
-# Function to create a spherical shape of crowders
 function Generate_Spherical_Crowders()
-
-    # Determine the target number of spheres to create
     target_spheres = Calculate_Target_Number_of_Spheres()
     generated_spheres = 0
 
-    # Generate spheres until we reach the target count
     while generated_spheres < target_spheres
-        # Attempt to generate a new sphere
         success = Calling_Sphere_Coordinate_Functions()
 
         if success
             generated_spheres += 1
             println("Sphere #$generated_spheres created successfully.")
-        else
-            #println("Failed to create a sphere; retrying.")
         end
     end
+
     println("Finished generating spheres. Total spheres created: $generated_spheres.")
-    
-    #Calculate_Target_Number_of_Spheres()
-    #Calling_Sphere_Coordinate_Functions()
 end
 
 """
@@ -589,136 +597,106 @@ end
 Randomly selects a valid, unused lattice coordinate to serve as the center of a new sphere.
 
 # Returns
-- A tuple containing (x, y, z) coordinates.
+- A tuple `(x, y, z)` representing the selected center coordinate.
 """
-
 function Randomly_Decide_Point()
-    # Collect all coordinates (keys) from Locations_and_States_Dict
     keys_list = collect(keys(Locations_and_States_Dict))
     selected_coordinate = nothing
     
-    # Continue until we find a coordinate with a state value of 0 and not used before
     while selected_coordinate === nothing
-        # Select a random coordinate from keys_list
-        random_index = rand(1:length(keys_list))
-        candidate_coordinate = keys_list[random_index]
+        candidate_coordinate = keys_list[rand(1:length(keys_list))]
         
-        # Check if the coordinate has already been used as a center
-        if candidate_coordinate in used_centers
-            continue  # Skip to the next iteration
-        end
-        
-        # Check the state of the selected coordinate
-        state, _ = Locations_and_States_Dict[candidate_coordinate]
-        
-        # If the state is 0, select it and add it to the used_centers set
-        if state == 0
-            selected_coordinate = candidate_coordinate
-            push!(used_centers, selected_coordinate)  # Mark this coordinate as used
+        if candidate_coordinate ∉ used_centers
+            state, _ = Locations_and_States_Dict[candidate_coordinate]
+            if state == 0
+                selected_coordinate = candidate_coordinate
+                push!(used_centers, selected_coordinate)
+            end
         end
     end
-    
-    # Extract the x, y, and z values from the selected coordinate
-    centerX, centerY, centerZ = selected_coordinate
-    
-    # Return the selected coordinate as the center point
-    return centerX, centerY, centerZ
+
+    return selected_coordinate
 end
 
 """
     Calling_Sphere_Coordinate_Functions() -> Bool
 
-Attempts to create a spherical crowder centered at a selected point by computing surrounding coordinates.
+Attempts to construct a spherical crowder by validating lattice points 
+in all six cardinal directions from a random center.
 
 # Returns
-- `true` if all directional components succeed, otherwise `false`.
+- `true` if the sphere is successfully created.
+- `false` if placement fails and must retry.
 """
-
 function Calling_Sphere_Coordinate_Functions()
-    success = false
-    while !success
-        # Choose a new center point
-        center_x, center_y, center_z = Randomly_Decide_Point()
-        
-        # Try to create the sphere in each direction
-        if calculate_sphere_coordinates_left_center_x(center_x, center_y, center_z) &&
-           calculate_sphere_coordinates_right_center_x(center_x, center_y, center_z) &&
-           calculate_sphere_coordinates_forward_center_y(center_x, center_y, center_z) &&
-           calculate_sphere_coordinates_backward_center_y(center_x, center_y, center_z) &&
-           calculate_sphere_coordinates_upward_center_z(center_x, center_y, center_z) &&
-           calculate_sphere_coordinates_downward_center_z(center_x, center_y, center_z)
-           
-            # If all functions succeed without clearing the set, we have successfully created a sphere
-            success = true
-            println("Successfully created a sphere at center ($center_x, $center_y, $center_z).")
-            determine_growth_direction()
-            Change_State_of_Sphere_Coordinates()  # Finalize state changes
-            Empty_Possible_Sphere_Coordinates()
-            return true  # Return true indicating success
-        else
-            println("Failed to create a valid sphere. Retrying with a new center.")
-            return false  # Return false indicating failure to create the sphere
-        end
+    center_x, center_y, center_z = Randomly_Decide_Point()
+
+    if calculate_sphere_coordinates_left_center_x(center_x, center_y, center_z) &&
+       calculate_sphere_coordinates_right_center_x(center_x, center_y, center_z) &&
+       calculate_sphere_coordinates_forward_center_y(center_x, center_y, center_z) &&
+       calculate_sphere_coordinates_backward_center_y(center_x, center_y, center_z) &&
+       calculate_sphere_coordinates_upward_center_z(center_x, center_y, center_z) &&
+       calculate_sphere_coordinates_downward_center_z(center_x, center_y, center_z)
+
+        println("✅ Successfully created a sphere at center ($center_x, $center_y, $center_z).")
+        determine_growth_direction()
+        Change_State_of_Sphere_Coordinates()
+        Empty_Possible_Sphere_Coordinates()
+        return true
+    else
+        println("⚠️ Failed to create a valid sphere. Retrying...")
+        return false
     end
 end
 
 """
     calculate_sphere_coordinates_left_center_x(center_x, center_y, center_z) -> Bool
 
-Attempts to identify and validate lattice coordinates to the left of `center_x` within a specified radius for sphere placement.
+Attempts to identify and validate lattice coordinates to the left of `center_x`
+within the given radius for sphere construction.
 
-Returns `true` if all selected coordinates are valid for sphere assignment.
+Returns `true` if all selected coordinates are valid (unoccupied), otherwise `false`.
 """
-
-
 function calculate_sphere_coordinates_left_center_x(center_x, center_y, center_z)
     global Possible_Sphere_Coordinates_Set
     Push_Coordinate_Sphere(center_x, center_y, center_z)
 
-    # Filter coordinates to those left of center_x
-    #left_coordinates = filter_coordinates_left_of_center(center_x)
-    #println("These are the left_coordinates: $left_coordinates")
-
-    #for coordinate in left_coordinates
     for coordinate in keys(Locations_and_States_Dict)
         state, _ = Locations_and_States_Dict[coordinate]
         coordinate_x, coordinate_y, coordinate_z = coordinate
         distance = X_Coordinate_Left(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
 
         if distance <= Obstacle_Radius
-            if state == 0 
+            if state == 0
                 Push_Coordinate_Sphere(coordinate_x, coordinate_y, coordinate_z)
             else
                 Empty_Possible_Sphere_Coordinates()
-                return false  # Failure due to an invalid state
+                return false
             end
         end
     end
-    return true  # Success if loop completes without clearing the set
+    return true
 end
+
 
 """
     calculate_sphere_coordinates_right_center_x(center_x, center_y, center_z) -> Bool
 
-Attempts to identify and validate lattice coordinates to the right of `center_x` within a specified radius for sphere placement.
+Attempts to identify and validate lattice coordinates to the right of `center_x`
+within the given radius for sphere construction.
 
-Returns `true` if all selected coordinates are valid for sphere assignment.
+Returns `true` if all selected coordinates are valid (unoccupied), otherwise `false`.
 """
-
 function calculate_sphere_coordinates_right_center_x(center_x, center_y, center_z)
     global Possible_Sphere_Coordinates_Set
 
-    #right_coordinates = filter_coordinates_right_of_center(center_x)
-    #println("These are the right_coordinates: $right_coordinates")
-
-    #for coordinate in right_coordinates
     for coordinate in keys(Locations_and_States_Dict)
         state, _ = Locations_and_States_Dict[coordinate]
         coordinate_x, coordinate_y, coordinate_z = coordinate
         distance = X_Coordinate_Right(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
 
         if distance <= Obstacle_Radius
-            if state == 0 
+            if state == 0
                 Push_Coordinate_Sphere(coordinate_x, coordinate_y, coordinate_z)
             else
                 Empty_Possible_Sphere_Coordinates()
@@ -732,25 +710,21 @@ end
 """
     calculate_sphere_coordinates_forward_center_y(center_x, center_y, center_z) -> Bool
 
-Attempts to identify and validate lattice coordinates in the forward (positive Y) direction within a specified radius.
+Attempts to identify and validate lattice coordinates in the forward (positive Y)
+direction within the given radius for sphere construction.
 
-Returns `true` if valid sphere coordinates are found.
+Returns `true` if all selected coordinates are valid (unoccupied), otherwise `false`.
 """
-
 function calculate_sphere_coordinates_forward_center_y(center_x, center_y, center_z)
     global Possible_Sphere_Coordinates_Set
 
-    #forward_coordinates = filter_coordinates_forward_of_center(center_y)
-    #println("These are the forward_coordinates: $forward_coordinates")
-
-    #for coordinate in forward_coordinates
     for coordinate in keys(Locations_and_States_Dict)
         state, _ = Locations_and_States_Dict[coordinate]
         coordinate_x, coordinate_y, coordinate_z = coordinate
         distance = Y_Coordinate_Forward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
 
         if distance <= Obstacle_Radius
-            if state == 0 
+            if state == 0
                 Push_Coordinate_Sphere(coordinate_x, coordinate_y, coordinate_z)
             else
                 Empty_Possible_Sphere_Coordinates()
@@ -760,29 +734,24 @@ function calculate_sphere_coordinates_forward_center_y(center_x, center_y, cente
     end
     return true
 end
-
 """
     calculate_sphere_coordinates_backward_center_y(center_x, center_y, center_z) -> Bool
 
-Attempts to identify and validate lattice coordinates in the backward (negative Y) direction within a specified radius.
+Attempts to identify and validate lattice coordinates in the backward (negative Y)
+direction within the given radius for sphere construction.
 
-Returns `true` if valid sphere coordinates are found.
+Returns `true` if all selected coordinates are valid (unoccupied), otherwise `false`.
 """
-
 function calculate_sphere_coordinates_backward_center_y(center_x, center_y, center_z)
     global Possible_Sphere_Coordinates_Set
 
-    #backward_coordinates = filter_coordinates_backward_of_center(center_y)
-    #println("These are the backward_coordinates: $backward_coordinates")
-
-    #for coordinate in backward_coordinates
     for coordinate in keys(Locations_and_States_Dict)
         state, _ = Locations_and_States_Dict[coordinate]
         coordinate_x, coordinate_y, coordinate_z = coordinate
         distance = Y_Coordinate_Backward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
 
         if distance <= Obstacle_Radius
-            if state == 0 
+            if state == 0
                 Push_Coordinate_Sphere(coordinate_x, coordinate_y, coordinate_z)
             else
                 Empty_Possible_Sphere_Coordinates()
@@ -796,24 +765,21 @@ end
 """
     calculate_sphere_coordinates_upward_center_z(center_x, center_y, center_z) -> Bool
 
-Identifies valid sphere coordinates upward (positive Z) from a central point.
+Attempts to identify and validate lattice coordinates upward (positive Z)
+within the given radius for sphere construction.
 
-Returns `true` if all candidates are unoccupied.
+Returns `true` if all selected coordinates are valid (unoccupied), otherwise `false`.
 """
-
 function calculate_sphere_coordinates_upward_center_z(center_x, center_y, center_z)
     global Possible_Sphere_Coordinates_Set
 
-    #upward_coordinates = filter_coordinates_upward_of_center(center_z)
-    #println("These are the upward_coordinates: $upward_coordinates")
-
-    #for coordinate in upward_coordinates
     for coordinate in keys(Locations_and_States_Dict)
         state, _ = Locations_and_States_Dict[coordinate]
         coordinate_x, coordinate_y, coordinate_z = coordinate
         distance = Z_Coordiante_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+
         if distance <= Obstacle_Radius
-            if state == 0 
+            if state == 0
                 Push_Coordinate_Sphere(coordinate_x, coordinate_y, coordinate_z)
             else
                 Empty_Possible_Sphere_Coordinates()
@@ -827,25 +793,21 @@ end
 """
     calculate_sphere_coordinates_downward_center_z(center_x, center_y, center_z) -> Bool
 
-Identifies valid sphere coordinates downward (negative Z) from a central point.
+Attempts to identify and validate lattice coordinates downward (negative Z)
+within the given radius for sphere construction.
 
-Returns `true` if all selected lattice points are available.
+Returns `true` if all selected coordinates are valid (unoccupied), otherwise `false`.
 """
-
 function calculate_sphere_coordinates_downward_center_z(center_x, center_y, center_z)
     global Possible_Sphere_Coordinates_Set
 
-    #downward_coordinates = filter_coordinates_downward_of_center(center_z)
-    #println("These are the downward_coordinates: $downward_coordinates")
-
-    #for coordinate in downward_coordinates
     for coordinate in keys(Locations_and_States_Dict)
         state, _ = Locations_and_States_Dict[coordinate]
         coordinate_x, coordinate_y, coordinate_z = coordinate
         distance = Z_Coordinate_Downward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
 
         if distance <= Obstacle_Radius
-            if state == 0 
+            if state == 0
                 Push_Coordinate_Sphere(coordinate_x, coordinate_y, coordinate_z)
             else
                 Empty_Possible_Sphere_Coordinates()
@@ -855,6 +817,8 @@ function calculate_sphere_coordinates_downward_center_z(center_x, center_y, cent
     end
     return true
 end
+
+
 
 
 """
@@ -926,210 +890,246 @@ end
 Returns all coordinates where the Z-value is less than or equal to `center_z`.
 """
 
+"""
+    distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
+
+Calculates the standard Euclidean distance between a center point and a coordinate in the lattice,
+without applying any boundary conditions.
+
+# Returns
+- Distance as a Float64.
+"""
 function distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    distance = sqrt((coordinate_x - center_x)^2 + (coordinate_y - center_y)^2 + (coordinate_z - center_z)^2)
-    return distance
+    return sqrt((coordinate_x - center_x)^2 + (coordinate_y - center_y)^2 + (coordinate_z - center_z)^2)
 end
 
 """
-    distance_from_center_X_Coordinate_Exception(...) -> Float64
+    distance_from_center_X_Coordinate_Exception(center_x, center_y, center_z, distance_x, coordinate_y, coordinate_z) -> Float64
 
-Calculates Euclidean distance when X coordinate wraps around due to periodic boundary conditions.
+Calculates Euclidean distance when an X-coordinate wraps around the periodic boundary.
+
+# Arguments
+- `distance_x`: Precomputed wrapped distance in the X direction.
+
+# Returns
+- Distance as a Float64.
 """
-
 function distance_from_center_X_Coordinate_Exception(center_x, center_y, center_z, distance_x, coordinate_y, coordinate_z)
-    distance = sqrt((distance_x)^2 + (coordinate_y - center_y)^2 + (coordinate_z - center_z)^2)
-    return distance
+    return sqrt(distance_x^2 + (coordinate_y - center_y)^2 + (coordinate_z - center_z)^2)
 end
 
 """
-    distance_from_center_Y_Coordinate_Exception(...) -> Float64
+    distance_from_center_Y_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, distance_y, coordinate_z) -> Float64
 
-Calculates distance when Y coordinate wraps due to boundary crossing.
+Calculates Euclidean distance when a Y-coordinate wraps around the periodic boundary.
+
+# Arguments
+- `distance_y`: Precomputed wrapped distance in the Y direction.
+
+# Returns
+- Distance as a Float64.
 """
-
 function distance_from_center_Y_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, distance_y, coordinate_z)
-    distance = sqrt((coordinate_x - center_x)^2 + (distance_y)^2 + (coordinate_z - center_z)^2)
-    return distance
+    return sqrt((coordinate_x - center_x)^2 + distance_y^2 + (coordinate_z - center_z)^2)
 end
-
 """
-    distance_from_center_Z_Coordinate_Exception(...) -> Float64
+    distance_from_center_Z_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, coordinate_y, distance_z) -> Float64
 
-Calculates distance when Z coordinate wraps due to boundary crossing.
+Calculates Euclidean distance when a Z-coordinate wraps around the periodic boundary.
+
+# Arguments
+- `distance_z`: Precomputed wrapped distance in the Z direction.
+
+# Returns
+- Distance as a Float64.
 """
-
 function distance_from_center_Z_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, coordinate_y, distance_z)
-    distance = sqrt((coordinate_x - center_x)^2 + (coordinate_y - center_y)^2 + (distance_z)^2)
-    return distance
+    return sqrt((coordinate_x - center_x)^2 + (coordinate_y - center_y)^2 + distance_z^2)
 end
 
 """
-    X_Coordinate_Right(...) -> Float64
+    X_Coordinate_Right(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
 
-Calculates distance from center in the +X direction, accounting for wrapping if needed.
+Calculates the distance from the center to a coordinate in the positive X direction.
+Handles periodic boundary crossing if the coordinate wraps around.
+
+# Returns
+- Distance as a Float64.
 """
-
 function X_Coordinate_Right(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    if coordinate_x < center_x #MAKE X COORDINATE OUT OF BOUNDS
-        distance = (Lattice_Size - center_x) + coordinate_x + 1
-        distance_from_center_X_Coordinate_Exception(center_x, center_y, center_z, distance, coordinate_y, coordinate_z)
+    if coordinate_x < center_x  # Crossed periodic boundary
+        distance_x = (Lattice_Size - center_x) + coordinate_x + 1
+        return distance_from_center_X_Coordinate_Exception(center_x, center_y, center_z, distance_x, coordinate_y, coordinate_z)
     else
-        distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+        return distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
     end
 end
 
 """
-    X_Coordinate_Left(...) -> Float64
+    X_Coordinate_Left(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
 
-Calculates distance from center in the -X direction, including wraparound if applicable.
+Calculates the distance from the center to a coordinate in the negative X direction.
+Handles periodic boundary crossing if necessary.
+
+# Returns
+- Distance as a Float64.
 """
-
 function X_Coordinate_Left(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    if coordinate_x > center_x #MAKE X COORDINATE OUT OF BOUNDS
-        distance = center_x + 1 + (Lattice_Size - coordinate_x)
-        #println("For coordinate_x: $coordinate_x the new distance is: $distance")
-        distance_from_center_X_Coordinate_Exception(center_x, center_y, center_z, distance, coordinate_y, coordinate_z)
+    if coordinate_x > center_x  # Crossed periodic boundary
+        distance_x = center_x + 1 + (Lattice_Size - coordinate_x)
+        return distance_from_center_X_Coordinate_Exception(center_x, center_y, center_z, distance_x, coordinate_y, coordinate_z)
     else
-        distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    end 
+        return distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+    end
 end
 
 """
-    Y_Coordinate_Forward(...) -> Float64
+    Y_Coordinate_Forward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
 
-Calculates distance from center in the +Y direction, with wraparound.
+Calculates the distance from the center to a coordinate in the positive Y direction.
+Handles wrapping if the coordinate crosses the periodic boundary.
+
+# Returns
+- Distance as a Float64.
 """
-
 function Y_Coordinate_Forward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    if coordinate_y < center_y #MAKE Y COORDINATE OUT OF BOUNDS
-        distance = (Lattice_Size - center_y) + coordinate_y + 1
-        distance_from_center_Y_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, distance, coordinate_z)
+    if coordinate_y < center_y  # Crossed periodic boundary
+        distance_y = (Lattice_Size - center_y) + coordinate_y + 1
+        return distance_from_center_Y_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, distance_y, coordinate_z)
     else
-        distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+        return distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
     end
-
 end
 
-"""
-    Y_Coordinate_Backward(...) -> Float64
 
-Calculates distance from center in the -Y direction, accounting for boundary wrap.
 """
+    Y_Coordinate_Backward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
 
+Calculates the distance from the center to a coordinate in the negative Y direction.
+Handles wrapping if the coordinate crosses the boundary.
+
+# Returns
+- Distance as a Float64.
+"""
 function Y_Coordinate_Backward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    if coordinate_y > center_y #MAKE Y COORDINATE OUT OF BOUNDS
-        distance = center_y + 1 + (Lattice_Size - coordinate_y)
-        distance_from_center_Y_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, distance, coordinate_z)
+    if coordinate_y > center_y  # Crossed periodic boundary
+        distance_y = center_y + 1 + (Lattice_Size - coordinate_y)
+        return distance_from_center_Y_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, distance_y, coordinate_z)
     else
-        distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+        return distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
     end
-    
 end
 
-"""
-    Z_Coordiante_Upward(...) -> Float64
 
-Calculates distance from center in the +Z direction, including periodic wrapping.
 """
+    Z_Coordiante_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
 
+Calculates the distance from the center to a coordinate in the positive Z direction.
+Handles boundary crossing using periodic wrapping.
+
+# Returns
+- Distance as a Float64.
+"""
 function Z_Coordiante_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    if coordinate_z < center_z #MAKE Z COORDINATE OUT OF BOUNDS
-        distance = (Lattice_Size - center_z) + coordinate_z + 1
-        distance_from_center_Z_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, coordinate_y, distance)
+    if coordinate_z < center_z  # Crossed periodic boundary
+        distance_z = (Lattice_Size - center_z) + coordinate_z + 1
+        return distance_from_center_Z_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, coordinate_y, distance_z)
     else
-        distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+        return distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
     end
 end
 
-"""
-    Z_Coordinate_Downward(...) -> Float64
 
-Calculates distance from center in the -Z direction, using exception logic for wraparound.
 """
+    Z_Coordinate_Downward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
 
+Calculates the distance from the center to a coordinate in the negative Z direction.
+Handles boundary crossing with periodic wraparound logic.
+
+# Returns
+- Distance as a Float64.
+"""
 function Z_Coordinate_Downward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
-    if coordinate_z > center_z #MAKE Z COORDINATE OUT OF BOUNDS
-        distance =  center_z + 1 + (Lattice_Size - coordinate_z)
-        distance_from_center_Z_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, coordinate_y, distance)
+    if coordinate_z > center_z  # Crossed periodic boundary
+        distance_z = center_z + 1 + (Lattice_Size - coordinate_z)
+        return distance_from_center_Z_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, coordinate_y, distance_z)
     else
-        distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+        return distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
     end
-
 end
+
 
 """
     Change_State_of_Sphere_Coordinates()
 
-Assigns the Sphere state and a unique identifier to all coordinates in `Possible_Sphere_Coordinates_Set`.
+Assigns a sphere state (5) and a unique identifier to all coordinates stored in `Possible_Sphere_Coordinates_Set`.
+This finalizes the creation of a sphere after its coordinates are determined.
 """
-
 function Change_State_of_Sphere_Coordinates()
-    # Iterate through each coordinate in Possible_Sphere_Coordinates_Set
-    #println("This is Possible_Sphere_Coordinates_Set: $Possible_Sphere_Coordinates_Set")
-    println("Total number of coordinates in Possible_Sphere_Coordinates_Set: ", length(Possible_Sphere_Coordinates_Set))
-    
-    # Get a unique number for this sphere
+    println("Total number of coordinates assigned to sphere: ", length(Possible_Sphere_Coordinates_Set))
+
     Sphere_Unique_Number = Randomly_Choose_Unique_Number_Sphere()
-    println("Sphere_Unique_Number: $Sphere_Unique_Number")
-    
-    # Use `keys(Possible_Sphere_Coordinates_Set)` to get only the coordinates
+    println("Sphere assigned unique identifier: $Sphere_Unique_Number")
+
     for coordinate in keys(Possible_Sphere_Coordinates_Set)
-        # Assign state and unique number to each coordinate
         Assigns_State_Monomer_Sphere(coordinate, Sphere_Unique_Number)
     end
 end
 
+
 """
     Randomly_Choose_Unique_Number_Sphere() -> Int
 
-Selects a unique identifier for a new sphere and removes it from the available pool.
+Selects and removes a unique identifier from the available sphere number pool.
 
 # Returns
-- A unique integer ID for a sphere.
+- Unique integer ID for the newly created sphere.
 """
-
 function Randomly_Choose_Unique_Number_Sphere()
-    if length(Sphere_Unique_Numbers) == 0
-        error("No more unique numbers available!")
+    if isempty(Sphere_Unique_Numbers)
+        error("No more unique sphere identifiers available!")
     end
 
-    # Randomly select and remove a number from the available list
     idx = rand(1:length(Sphere_Unique_Numbers))
-    UniqueCode = Sphere_Unique_Numbers[idx]
-    deleteat!(Sphere_Unique_Numbers, idx)  # Remove the selected number to ensure uniqueness
+    unique_code = Sphere_Unique_Numbers[idx]
+    deleteat!(Sphere_Unique_Numbers, idx)
     
-    return UniqueCode
+    return unique_code
 end
 
 """
     Assigns_State_Monomer_Sphere(Location::Tuple, Sphere_Unique_Number::Int)
 
-Assigns sphere state (5) and a unique ID to the given coordinate.
-"""
+Assigns the Sphere state (5) and a unique identifier to a specified lattice coordinate.
 
+# Arguments
+- `Location`: Tuple of (x, y, z) coordinate.
+- `Sphere_Unique_Number`: Unique identifier assigned to this sphere.
+"""
 function Assigns_State_Monomer_Sphere(Location, Sphere_Unique_Number)
     global Locations_and_States_Dict
-    _, Unique_Number = Locations_and_States_Dict[Location]
     Locations_and_States_Dict[Location] = (SphereState_Value, Sphere_Unique_Number)
 end
+
 
 """
     Empty_Possible_Sphere_Coordinates()
 
-Clears the global dictionary used for temporary storage of sphere coordinates.
+Clears the temporary dictionary that stores coordinates belonging to a sphere under construction.
 """
-
 function Empty_Possible_Sphere_Coordinates()
-    empty!(Possible_Sphere_Coordinates_Set)  
+    empty!(Possible_Sphere_Coordinates_Set)
 end
+
 
 """
     Push_Coordinate_Sphere(X::Float64, Y::Float64, Z::Float64)
 
-Adds the specified coordinate to `Possible_Sphere_Coordinates_Set`.
-"""
+Adds a coordinate to the `Possible_Sphere_Coordinates_Set` for temporary sphere assembly.
 
+# Arguments
+- `X`, `Y`, `Z`: Coordinate components to store.
+"""
 function Push_Coordinate_Sphere(X, Y, Z)
     Possible_Sphere_Coordinates_Set[(X, Y, Z)] = nothing
 end
@@ -1137,10 +1137,9 @@ end
 """
     determine_growth_direction()
 
-Analyzes the spread of the current sphere and prints the primary growth axis (X, Y, or Z).
+Analyzes and prints the primary growth axis (X, Y, or Z) of the most recently generated sphere,
+based on the spread of coordinates in `Possible_Sphere_Coordinates_Set`.
 """
-
-
 function determine_growth_direction()
     x_values = [coord[1] for coord in keys(Possible_Sphere_Coordinates_Set)]
     y_values = [coord[2] for coord in keys(Possible_Sphere_Coordinates_Set)]
@@ -1151,69 +1150,54 @@ function determine_growth_direction()
     z_range = maximum(z_values) - minimum(z_values)
 
     if x_range > y_range && x_range > z_range
-        println("The sphere is growing primarily in the X direction.")
+        println("Sphere growth is primarily along the X-axis.")
     elseif y_range > x_range && y_range > z_range
-        println("The sphere is growing primarily in the Y direction.")
+        println("Sphere growth is primarily along the Y-axis.")
     elseif z_range > x_range && z_range > y_range
-        println("The sphere is growing primarily in the Z direction.")
+        println("Sphere growth is primarily along the Z-axis.")
     else
-        println("The sphere is growing equally in multiple directions.")
+        println("Sphere growth is approximately isotropic across axes.")
     end
 
     println("X range: $x_range, Y range: $y_range, Z range: $z_range")
 end
 
+
 """
     Calculate_Target_Number_of_Spheres() -> Int
 
-Estimates how many spheres should be placed to reach the target crowding concentration.
+Estimates how many spheres should be generated based on the desired crowding concentration and sphere volume.
 
 # Returns
-- Integer number of spheres to generate.
+- Target number of spheres to place.
 """
-
 function Calculate_Target_Number_of_Spheres()
-  # Calculate the total number of lattice locations
-  total_locations = length(keys(Locations_and_States_Dict))
-    
-  # Calculate the target number of occupied spaces based on crowder concentration
-  occupied_spaces = Crowder_Concentration_Spheres * total_locations
-  target_occupied_spaces = round(Int, occupied_spaces)
+    total_locations = length(keys(Locations_and_States_Dict))
+    occupied_spaces = Crowder_Concentration_Spheres * total_locations
+    target_occupied_spaces = round(Int, occupied_spaces)
 
-  # Approximate volume of one sphere in lattice coordinates (from observation)
-  #Sphere_Volume = 1 # For a sphere of radius 1 in FCC
-  
-  # Estimate number of spheres needed
-  target_number_of_spheres = round(Int, target_occupied_spaces / Sphere_Volume)
+    target_number_of_spheres = round(Int, target_occupied_spaces / Sphere_Volume)
 
-  println("Total lattice locations: $total_locations")
-  println("Target occupied spaces based on concentration: $target_occupied_spaces")
-  println("Estimated number of spheres needed: $target_number_of_spheres")
+    println("Total lattice locations: $total_locations")
+    println("Target occupied spaces based on desired concentration: $target_occupied_spaces")
+    println("Estimated number of spheres needed: $target_number_of_spheres")
 
-  return target_number_of_spheres
+    return target_number_of_spheres
 end
+
 
 """
     Count_Number_Coordinates_Spheres() -> Int
 
-Counts how many lattice coordinates are currently marked as part of a sphere.
+Counts the number of lattice coordinates currently assigned to sphere crowders.
 
 # Returns
-- Integer count of sphere-assigned coordinates.
+- Integer number of coordinates assigned to spheres.
 """
-
 function Count_Number_Coordinates_Spheres()
-    sphere_count = 0
-
-    # Loop through the dictionary to count monomers in state 5
-    for (_, (state, _)) in Locations_and_States_Dict
-        if state == 5
-            sphere_count += 1
-        end
-    end
-
-    return  sphere_count
+    return count(state == SphereState_Value for (state, _) in values(Locations_and_States_Dict))
 end
+
 
 #-------------------------------------------------
 
