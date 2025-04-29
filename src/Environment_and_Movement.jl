@@ -114,15 +114,8 @@ Creates the directory structure for saving simulation results and calls Input_Pa
 function Make_Directory()
         # Use mkpath to create the entire directory path, including parent directories
         global directory = "$Directory/Simulation_$timestamp"
-        #println("The number of threads used: ",Threads.nthreads())
+        mkpath("$directory")
         
-        # Create subdirectories
-        mkpath("$directory/Bar_Graphs")
-        mkpath("$directory/Heat_Maps") 
-        mkpath("$directory/Line_Graphs")
-        mkpath("$directory/Analysis")
-
-    #Input_Parameters()
 end
 
 """
@@ -223,8 +216,6 @@ function Randomly_Chooses_Monomer()
         # Check if the state is non-zero (indicating it's a monomer)
         if State != 0
             return RandomLocation
-        else
-            # println("inside randomly_chooses_monomer else statement")
         end
     end
 end
@@ -323,7 +314,6 @@ Randomly selects a movement option for a monomer.
 
 function Randomly_Chooses_Movement() 
     Move = Possible_Movement_Options[rand(1:13)]
-    #println("This is Move: ",Move)
     return Move
 end
 
@@ -737,8 +727,6 @@ function Movement()
             if state == 0
                 continue
             end
-
-            #println("Processing Monomer: $Monomer with State: $state")
             
             # Randomly choose a movement type (e.g., "One" to "Eighteen")
             Movement = Randomly_Chooses_Movement()
@@ -782,8 +770,6 @@ function Movement()
           Save_Data_Two(timesteps, native, amyloid)
           Save_MSD_Data(timesteps)
           Count_Fibril_Length(timesteps)
-          #println("This is Locations_and_States_Dict: ",Locations_and_States_Dict)
-
         # Timing for the timestep
         Past_Time_Raw = Current_Time_Raw
         Current_Time_Raw = now()
@@ -2574,7 +2560,6 @@ function Native_Move_or_Conformational_Change(Monomer, Desired_Location)
     else
         # Handle conformational change only if movement doesn't happen
         if Random_Dice() < Native_to_Amyloid
-            #println("I am going to do a conformational change")
             Conformational_Change(Monomer)
         end
     end
@@ -2786,7 +2771,6 @@ function Delete_Monomer_Information_from_Initial_Locations_and_States(unique_num
      for (coordinate, (current_state, uid)) in Initial_Locations_and_States_Dict
          if uid == unique_number && current_state == state
              monomer_to_delete = coordinate
-             println("Coordinate to be deleted in Initial_Locations_and_States_Dict: ",coordinate)
              break  # Stop after finding the first match
          end
      end
@@ -3290,7 +3274,6 @@ Simulates a random dice roll (returns a random number between 0 and 1).
 
 function Random_Dice()
     Random_Dice = 1-rand()
-    #println("The Random_Dice is: $Random_Dice")
     return Random_Dice
 end
 
@@ -3594,8 +3577,6 @@ function Move_Aggregate(Monomer)
         # Set new position to the monomer's state
         Update_Locations_States(New_Position, State_Monomer, Unique_Code_Monomer)
     end
-    #println("The number of monomers that make up this oligomer or aggregate before Move_Aggregate: ",Count_Monomers_With_Unique_Number(Unique_Code_Monomer))
-
     Empty_Possible_Coordinates_Movement_Dict()
 end
 
@@ -3620,7 +3601,6 @@ Updates the state and unique code of a location in the lattice.
 function Update_Locations_States(Position, State, Unique_Code)
     # Lock to ensure only one thread writes to the dictionary at a time
     lock(dict_lock) do
-        #println("A position was changed in Update_Locations_States")
         Locations_and_States_Dict[Position] = (State, Unique_Code)
     end
 end
@@ -3736,13 +3716,11 @@ function compute_MSD()
          current_position = get(current_positions, unique_id, nothing)
 
          if current_position === nothing
-             println("⚠️ Warning: unique_id $unique_id not found in current_positions")
              continue
          end
  
          initial_position = get(initial_positions, unique_id, nothing)
          if initial_position === nothing
-             println("⚠️ Warning: unique_id $unique_id not found in initial_positions")
              continue
          end
 
@@ -3873,13 +3851,6 @@ function compute_MSD_aggregates()
     missing_ids = setdiff(initial_ids, current_ids)  # Aggregates that disappeared
     new_ids = setdiff(current_ids, initial_ids)      # New aggregates that were not in initial
 
-    if !isempty(missing_ids)
-        println("Warning: Missing aggregates -> ", missing_ids)
-    end
-    if !isempty(new_ids)
-        println("Note: New aggregates detected -> ", new_ids)
-    end
-
     # Step 3: Compute MSD based on unique ID matching
     total_displacement = 0.0
     num_aggregates = 0
@@ -3907,8 +3878,6 @@ end
 
 
 
-#Profile.clear()
+
 Make_Directory()
-#@profile Movement()
-#Profile.print()
 Movement()

@@ -819,8 +819,6 @@ function calculate_sphere_coordinates_downward_center_z(center_x, center_y, cent
 end
 
 
-
-
 """
     filter_coordinates_left_of_center(center_x) -> Vector{Tuple}
 
@@ -884,11 +882,6 @@ function filter_coordinates_downward_of_center(center_z)
     return filter(coord -> coord[3] <= center_z, keys(Locations_and_States_Dict))
 end
 
-"""
-    filter_coordinates_downward_of_center(center_z) -> Vector{Tuple}
-
-Returns all coordinates where the Z-value is less than or equal to `center_z`.
-"""
 
 """
     distance_from_center(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
