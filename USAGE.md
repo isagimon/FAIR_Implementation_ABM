@@ -70,7 +70,7 @@ The parameters below can be configured directly at the top of the `Main_Simulati
 
 The simulation generates the following outputs:
 
-- `Simulation_Results.csv`: Tracks oligomer and aggregate counts over time.
+- `Oligomer_and_Aggregate_Count_Results.csv`: Tracks oligomer and aggregate counts over time.
 - `Native_and_Amyloid_Count_Results.csv`: Counts of native vs. amyloid monomers.
 - `MSD_Data.csv`: Mean squared displacement data for monomer diffusion.
 - `Fibril_Length_Count_Results.csv`: Tracks fibril length distributions.
@@ -82,7 +82,7 @@ The simulation generates the following outputs:
 
 Here’s what the columns represent in key `.csv` files:
 
-### `Simulation_Results.csv`
+### `Oligomer_and_Aggregate_Count_Results.csv`
 | Column     | Description                           |
 |------------|---------------------------------------|
 | Timestep   | Simulation timepoint (integer)        |
