@@ -23,7 +23,7 @@ Each subfolder contains a complete set of outputs described below.
 
 This file contains the counts of oligomers and aggregates at each timestep of the simulation.
 
-* **File Description:** `Simulation_Results.csv`
+* **File Description:** `Oligomer_and_Aggregate_Count_Results.csv`
 * **Data Type:** Comma-Separated Values (CSV)
 * **Columns:**
 
