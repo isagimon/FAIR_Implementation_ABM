@@ -19,7 +19,7 @@ Data_Collection/Simulation_2025-04-16_11-08-52_AM/
 
 Each subfolder contains a complete set of outputs described below.
 
-## 1. `Simulation_Results.csv`
+## 1. `Oligomer_and_Aggregate_Count_Results.csv`
 
 This file contains the counts of oligomers and aggregates at each timestep of the simulation.
 
