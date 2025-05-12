@@ -546,7 +546,7 @@ function Export_Final_Results()
     global directory = "$Directory/Simulation_$timestamp"
     
     # Write the CSV file
-    file_path = "$directory/Simulation_Results.csv"
+    file_path = "$directory/Oligomer_and_Aggregate_Count_Results.csv"
     CSV.write(file_path, results_df)
 end
 
