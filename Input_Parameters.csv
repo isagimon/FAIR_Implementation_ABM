@@ -1,10 +1,9 @@
 ﻿Input_Parameters,Values,Instructions
-Lattice_Size,3,Set this to the lattice width; lattice size will be this number cubed
-Max_NumberMonomers_Native,20,
-Max_NumberMonomers_Amyloid,20,
-Spheres?,FALSE,"Set to TRUE for spheres, or FALSE for line; If TRUE specify Sphere_Volume, Obstacle_Radius, and Crowder_Concentration_Spheres"
-Sphere_Volume,1,#I NEED TO DESCRIBE THIS!
-Obstacle_Radius,1,"Radius of the obstacle (must be greater or equal to 0); only integers; if 0 is chosen, the obstacle will be the same size as a monomer"
+Lattice_Size,30,Set this to the lattice width; lattice size will be this number cubed
+Max_NumberMonomers_Native,1000,
+Max_NumberMonomers_Amyloid,0,
+Spheres?,TRUE,"Set to TRUE for spheres, or FALSE for line; If TRUE specify Sphere_Volume, Obstacle_Radius, and Crowder_Concentration_Spheres"
+Obstacle_Radius,1,"Radius of the obstacle (must be greater or equal to 0 and less than 7); only integers; if 0 is chosen, the obstacle will be the same size as a monomer; "
 Crowder_Concentration_Spheres,0.4,Concentration must be between 0 and 1 
 Native_to_Amyloid,0.8,Probabilities have to be between 0 and 1 (N -> A)
 Amyloid_to_Native,0.1,Probabilities have to be between 0 and 1 (N <- A)

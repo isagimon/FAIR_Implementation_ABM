@@ -135,7 +135,7 @@ Max_NumberMonomers_Amyloid = Parameters["Max_NumberMonomers_Amyloid"]     # Maxi
 Obstacle_Radius = Parameters["Obstacle_Radius"]                           # Radius of spherical crowders
 Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"] # Crowder concentration
 Obstacle = Parameters["Spheres?"]                                         # Boolean: Enable/Disable crowders
-Sphere_Volume = Parameters["Sphere_Volume"]                               # Volume of a sphere
+#Sphere_Volume = Parameters["Sphere_Volume"]                               # Volume of a sphere
 
 # Debugging: Print loaded parameters
 println("Loaded Parameters: ", Parameters)
@@ -644,7 +644,7 @@ function Calling_Sphere_Coordinate_Functions()
         Empty_Possible_Sphere_Coordinates()
         return true
     else
-        println("⚠️ Failed to create a valid sphere. Retrying...")
+        #println("⚠️ Failed to create a valid sphere. Retrying...")
         return false
     end
 end
@@ -1169,7 +1169,7 @@ function Calculate_Target_Number_of_Spheres()
     occupied_spaces = Crowder_Concentration_Spheres * total_locations
     target_occupied_spaces = round(Int, occupied_spaces)
 
-    target_number_of_spheres = round(Int, target_occupied_spaces / Sphere_Volume)
+    target_number_of_spheres = round(Int, target_occupied_spaces / Return_Sphere_Volume())
 
     println("Total lattice locations: $total_locations")
     println("Target occupied spaces based on desired concentration: $target_occupied_spaces")
@@ -1191,7 +1191,33 @@ function Count_Number_Coordinates_Spheres()
     return count(state == SphereState_Value for (state, _) in values(Locations_and_States_Dict))
 end
 
+"""
+    Return_Sphere_Volume() -> Int
+
+Returns the number of FCC lattice coordinates that make up a spherical crowder based on the specified obstacle radius.
+
+# Returns
+- Integer representing the volume (in number of lattice sites) occupied by a single spherical crowder.
+"""
+
+function Return_Sphere_Volume()
+    if Obstacle_Radius == 1
+        return 20
+    elseif Obstacle_Radius == 2
+        return 130
+    elseif Obstacle_Radius == 3
+        return 400
+    elseif Obstacle_Radius == 4
+        return 920
+    elseif Obstacle_Radius == 5
+        return 1850
+    elseif Obstacle_Radius == 6
+        return 3300
+    end
+end
 
 #-------------------------------------------------
 
 Generate_Coordinates(Lattice_Size)
+Number_of_Coordinates_Sphere = Count_Number_Coordinates_Spheres()
+println("The number of coordinates that are spheres: $Number_of_Coordinates_Sphere")
