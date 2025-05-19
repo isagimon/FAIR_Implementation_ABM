@@ -1201,7 +1201,9 @@ Returns the number of FCC lattice coordinates that make up a spherical crowder b
 """
 
 function Return_Sphere_Volume()
-    if Obstacle_Radius == 1
+    if Obstacle_Radius == 0
+        return 1
+    elseif Obstacle_Radius == 1
         return 20
     elseif Obstacle_Radius == 2
         return 130
