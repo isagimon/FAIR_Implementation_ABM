@@ -12,6 +12,16 @@ This Julia project simulates the dynamics of protein aggregation on a 3D lattice
 - `LICENSE`: License file (Apache 2.0)  
 
 ---
+### 📊 Post-Simulation Analysis (`Analysis/` Folder)
+
+This folder contains scripts used to process, summarize, and visualize simulation outputs stored in `Data_Collection/Compare_Simulations/`.
+
+- `Run_All_Analysis_Scripts.jl`: Master script that runs all the analysis pipelines based on parameters from a CSV file.
+- `Append_Amyloid_and_Native.jl`: Extracts and appends native and amyloid monomer counts from each simulation.
+- `Append_Aggregate_and_Oligomer.jl`: Processes aggregate and oligomer counts.
+- `Average_All_Monomers_vs_Timesteps.jl`: Plots average species counts over time across all simulations.
+- `Input_Parameters_Analysis.csv`: Parameter sheet used by the master script to configure analysis runs.
+---
 
 ## ⚙️ Dependencies
 
