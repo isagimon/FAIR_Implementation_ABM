@@ -52,7 +52,7 @@ Processes all simulation folders under `directory` and appends oligomer and fibr
 - Scans all folders starting with "Simulation".
 - Reads `Oligomer_and_Aggregate_Count_Results.csv` from each.
 - Extracts and appends fibril and oligomer columns to:
-  - `Appending_Fibril_Count.csv`
+  - `Appending_Aggregate_Count.csv`
   - `Appending_Oligomer_Count.csv`
 
 # Calls
@@ -187,7 +187,7 @@ end
 """
     Amorphous_Count_Excel(directory::String, Number_Timesteps::Int)
 
-Initializes the fibril summary file `Appending_Fibril_Count.csv` if it does not exist.
+Initializes the fibril summary file `Appending_Aggregate_Count.csv` if it does not exist.
 
 # Arguments
 - `directory`: Root directory containing simulation data.
@@ -201,7 +201,7 @@ Initializes the fibril summary file `Appending_Fibril_Count.csv` if it does not 
 function Amorphous_Count_Excel(directory, Number_Timesteps)
     if Checks_Amorphous_Excel_Present(directory) == false
         Compare_Simulation_Directory = directory * "/Compare_Simulations"
-        File_Name = "Appending_Fibril_Count.csv"
+        File_Name = "Appending_Aggregate_Count.csv"
         Complete_File_Path = joinpath(Compare_Simulation_Directory, File_Name)
         Timesteps = Append_Number_Timesteps(Number_Timesteps)
         CSV.write(Complete_File_Path, Timesteps)
@@ -212,7 +212,7 @@ end
 """
     Checks_Amorphous_Excel_Present(directory::String) -> Bool
 
-Checks whether the fibril summary file (`Appending_Fibril_Count.csv`) exists.
+Checks whether the fibril summary file (`Appending_Aggregate_Count.csv`) exists.
 
 # Arguments
 - `directory`: Root directory to check.
@@ -227,7 +227,7 @@ Checks whether the fibril summary file (`Appending_Fibril_Count.csv`) exists.
 
 function Checks_Amorphous_Excel_Present(directory)
     Compare_Simulation_Directory = directory * "/Compare_Simulations"
-    CSV_File = "Appending_Fibril_Count.csv"
+    CSV_File = "Appending_Aggregate_Count.csv"
     File_Path = joinpath(Compare_Simulation_Directory, CSV_File)
     if !isfile(File_Path)
         println("File is not found: $Compare_Simulation_Directory")
@@ -312,7 +312,7 @@ end
 """
     Location_Fibril_CSV_File(directory::String) -> String
 
-Returns the full path to the central `Appending_Fibril_Count.csv` file.
+Returns the full path to the central `Appending_Aggregate_Count.csv` file.
 
 # Arguments
 - `directory`: Root folder of the simulation project.
@@ -322,7 +322,7 @@ Returns the full path to the central `Appending_Fibril_Count.csv` file.
 """
 
 function Location_Fibril_CSV_File(directory) 
-    return joinpath(directory, "Compare_Simulations", "Appending_Fibril_Count.csv")
+    return joinpath(directory, "Compare_Simulations", "Appending_Aggregate_Count.csv")
 end
 
 """

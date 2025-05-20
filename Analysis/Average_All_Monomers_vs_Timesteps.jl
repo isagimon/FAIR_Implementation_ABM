@@ -21,7 +21,7 @@ CSV data stored in the `Compare_Simulations` folder.
   - `Appending_Amyloid_Count.csv`
   - `Appending_Native_Count.csv`
   - `Appending_Oligomer_Count.csv`
-  - `Appending_Fibril_Count.csv`
+  - `Appending_Aggregate_Count.csv`
 - Each file contains simulation results across multiple runs. The function computes
   the mean value at each timestep by averaging across all simulations.
 - All four species are plotted together on the same graph against time (0 to Total_Timesteps).
@@ -62,7 +62,7 @@ function run_plot_all_monomer_states(directory::String, Total_Timesteps::Int)
     amyloid_file = joinpath(directory, "Compare_Simulations", "Appending_Amyloid_Count.csv")
     native_file = joinpath(directory, "Compare_Simulations", "Appending_Native_Count.csv")
     oligomer_file = joinpath(directory, "Compare_Simulations", "Appending_Oligomer_Count.csv")
-    aggregate_file = joinpath(directory, "Compare_Simulations", "Appending_Fibril_Count.csv")
+    aggregate_file = joinpath(directory, "Compare_Simulations", "Appending_Aggregate_Count.csv")
 
     # Process all monomer state files
     println("Processing Amyloid data...")
