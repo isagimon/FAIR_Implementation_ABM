@@ -205,7 +205,6 @@ This file contains the number of aggregates (state 4, e.g., fibrils) recorded at
         * **Data Type:** Integer
         * **Units:** Number of aggregates
         * **Example:** 0, 5, 40
-"""
 
 ## 9. `Average_All_Monomers_States_vs_Timesteps_<timestamp>.png`
 
