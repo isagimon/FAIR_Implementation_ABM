@@ -11,7 +11,7 @@ Processes and compiles oligomer and fibril count data across multiple simulation
 storing results into centralized summary CSV files for downstream analysis.
 
 This script automates the collection of time-series aggregation data by reading individual
-`Simulation_Results.csv` files and extracting relevant columns for comparison.
+`Oligomer_and_Aggregate_Count_Results.csv` files and extracting relevant columns for comparison.
 
 Implements FAIR principles:
 
@@ -41,87 +41,86 @@ License: http://www.apache.org/licenses/LICENSE-2.0
 """
     run_process_aggregate_excel_sheets(directory::String, Number_Timesteps::Int)
 
-Main driver function that processes aggregate count data across all simulation folders.
+Processes all simulation folders under `directory` and appends oligomer and fibril
+(aggregate) counts into centralized CSV files.
 
 # Arguments
-- `directory::String`: Path to the top-level directory containing simulation data.
-- `Number_Timesteps::Int`: Total number of simulation timesteps.
+- `directory`: Root directory containing all simulation subfolders.
+- `Number_Timesteps`: Total number of simulation timesteps.
 
 # Behavior
-- Initializes data structures.
-- Extracts and appends aggregate data to summary CSVs.
+- Scans all folders starting with "Simulation".
+- Reads `Oligomer_and_Aggregate_Count_Results.csv` from each.
+- Extracts and appends fibril and oligomer columns to:
+  - `Appending_Fibril_Count.csv`
+  - `Appending_Oligomer_Count.csv`
 
 # Calls
-- `Extract_Aggregate_Count_Excel_Sheets`
+- `Save_Amorphous_Count_Column`
+- `Save_Oligomer_Count_Column`
 """
+
 function run_process_aggregate_excel_sheets(directory::String, Number_Timesteps::Int)
-    # Initialize arrays
-    Avg_Oligomer_Count = zeros(Int, Number_Timesteps, 2) #TIMESTEP HAS TO BEGIN AT ZERO 
-    Avg_Fibril_Count = zeros(Int, Number_Timesteps, 2) #TIMESTEP HAS TO BEGIN AT ZERO 
-
-    timestamp = string(now(), dateformat"mm-dd-yyyy HH:MM:SS.sss")
-
-    """
-        Extract_Aggregate_Count_Excel_Sheets()
-
-    Collects and appends aggregate data (amorphous and oligomer) across all simulation folders
-    in the specified directory.
-
-    # Behavior
-    - Generates CSVs if not already present.
-    - Iterates over folders starting with "Simulation".
-    - Appends relevant columns to central data files.
-    """
-    function Extract_Aggregate_Count_Excel_Sheets()
-        Amorphous_Count_Excel(directory)
-        Oligomer_Count_Excel(directory)
-        All_Folders = readdir(directory, join=true)
-        Simulation_Folders = filter(folder -> isdir(folder) && startswith(basename(folder), "Simulation"), All_Folders)
-
-        for Folder in Simulation_Folders
-            Simulation_Results_File = joinpath(Folder, "Simulation_Results.csv")
-            println("This is Folder: $Folder")
-            Save_Amorphous_Count_Column(Simulation_Results_File, Folder)
-            Save_Oligomer_Count_Column(Simulation_Results_File, Folder)
-        end
+    Amorphous_Count_Excel(directory, Number_Timesteps)
+    Oligomer_Count_Excel(directory, Number_Timesteps)
+    All_Folders = readdir(directory, join=true)
+    Simulation_Folders = filter(folder -> isdir(folder) && startswith(basename(folder), "Simulation"), All_Folders)
+    
+    for Folder in Simulation_Folders
+        #Line_Graph_Folder = joinpath(Folder, "Line_Graphs")
+        Simulation_Results_File = joinpath(Folder, "Oligomer_and_Aggregate_Count_Results.csv")
+        println("This is Folder: $Folder")
+        Save_Amorphous_Count_Column(Simulation_Results_File, Folder)
+        #println("This is the Amorphous_Count_File: ",Amorphous_Count_File)
+        Save_Oligomer_Count_Column(Simulation_Results_File, Folder)
+        #println("This is the Oligomer_Count_File: ",Oligomer_Count_File)
     end
-
-    Extract_Aggregate_Count_Excel_Sheets()
 end
 
 """
-    Save_Amorphous_Count_Column(Amorphous_Count_File, Full_Path)
+    Save_Amorphous_Count_Column(Amorphous_Count_File::String, Full_Path::String)
 
-Reads and isolates the third column (aggregate count) from a CSV file and appends it
-to the summary fibril CSV.
+Extracts the third column (fibril/aggregate count) from a simulation output CSV
+and prepares it for appending to the fibril summary CSV.
 
 # Arguments
-- `Amorphous_Count_File`: Path to the Simulation_Results.csv file.
-- `Full_Path`: Full path to the specific simulation folder.
+- `Amorphous_Count_File`: Full path to the simulation results CSV.
+- `Full_Path`: Path to the simulation folder (used for naming).
 
 # Calls
 - `Append_Amorphous_Column`
+
+# Notes
+- Assumes the third column contains fibril counts.
 """
+
 function Save_Amorphous_Count_Column(Amorphous_Count_File, Full_Path)
     Read_File = CSV.read(Amorphous_Count_File, DataFrame)
     Aggregate_Column_Name = names(Read_File)[3]
     Aggregate_Column_Data = Read_File[!, Aggregate_Column_Name]
     Aggregate_Column_DataFrame = DataFrame(Aggregate_Column = Aggregate_Column_Data)
     Append_Amorphous_Column(Aggregate_Column_DataFrame, Full_Path)
+    #println("This is Second Column: $Aggregate_Column_DataFrame")
 end
 
 """
-    Append_Amorphous_Column(Aggregate_Column, Full_Path)
+    Append_Amorphous_Column(Aggregate_Column::DataFrame, Full_Path::String)
 
-Appends the provided aggregate count data column to the centralized fibril CSV file.
+Appends a fibril count column for one simulation to the aggregated fibril CSV.
 
 # Arguments
-- `Aggregate_Column`: DataFrame with one column containing aggregate counts.
-- `Full_Path`: Full path to the simulation folder used to generate the column label.
+- `Aggregate_Column`: A DataFrame with one column of fibril counts.
+- `Full_Path`: Path to the simulation folder for retrieving the simulation name.
 
-# Global dependencies
-- `directory` (used in CSV file path construction)
+# Uses
+- `Location_Fibril_CSV_File`
+- `Retrieve_Simulation_Name`
+
+# Notes
+- Renames the column to the simulation folder name before appending.
 """
+
+
 function Append_Amorphous_Column(Aggregate_Column, Full_Path)
     Simulation_Name = Retrieve_Simulation_Name(Full_Path)
     println("This is Simulation_Name: $Simulation_Name")
@@ -133,15 +132,50 @@ function Append_Amorphous_Column(Aggregate_Column, Full_Path)
 end
 
 """
-    Save_Oligomer_Count_Column(Oligomer_Count_File, Full_Path)
+    Append_Oligomer_Column(Oligomer_Column::Vector, Full_Path::String)
 
-Reads and isolates the second column (oligomer count) from a CSV file and appends it
-to the summary oligomer CSV.
+Appends oligomer data from a single simulation to `Appending_Oligomer_Count.csv`.
 
 # Arguments
-- `Oligomer_Count_File`: Path to the Simulation_Results.csv file.
-- `Full_Path`: Full path to the simulation folder.
+- `Oligomer_Column`: A vector of oligomer count values.
+- `Full_Path`: Path used to derive the simulation folder name.
+
+# Uses
+- `Location_Oligomer_CSV_File`
+- `Retrieve_Simulation_Name`
+
+# Notes
+- Appends the column using the simulation folder name as header.
 """
+
+
+function Append_Oligomer_Column(Oligomer_Column, Full_Path)
+    Simulation_Name = Retrieve_Simulation_Name(Full_Path)
+    println("This is Simulation_Name: $Simulation_Name")
+    Oligomer_CSV_File = Location_Oligomer_CSV_File(directory)
+    Read_Oligomer_CSV_File = CSV.read(Oligomer_CSV_File, DataFrame)
+    Read_Oligomer_CSV_File[!, Simulation_Name] = Oligomer_Column
+    CSV.write(Oligomer_CSV_File, Read_Oligomer_CSV_File)
+
+end
+
+"""
+    Save_Oligomer_Count_Column(Oligomer_Count_File::String, Full_Path::String)
+
+Extracts the second column (oligomer count) from a simulation results CSV and
+prepares it for appending to the oligomer summary CSV.
+
+# Arguments
+- `Oligomer_Count_File`: Path to the results CSV.
+- `Full_Path`: Path to the simulation folder (used for naming).
+
+# Calls
+- `Append_Oligomer_Column`
+
+# Notes
+- Assumes the second column contains oligomer count data.
+"""
+
 function Save_Oligomer_Count_Column(Oligomer_Count_File, Full_Path)
     Read_File = CSV.read(Oligomer_Count_File, DataFrame)
     Oligomer_Column_Name = names(Read_File)[2]
@@ -151,57 +185,74 @@ function Save_Oligomer_Count_Column(Oligomer_Count_File, Full_Path)
 end
 
 """
-    Append_Oligomer_Column(Oligomer_Column, Full_Path)
+    Amorphous_Count_Excel(directory::String, Number_Timesteps::Int)
 
-Appends the provided oligomer count data column to the centralized oligomer CSV file.
-
-# Arguments
-- `Oligomer_Column`: Array of oligomer count values.
-- `Full_Path`: Full path to the simulation folder used to generate the column label.
-"""
-function Append_Oligomer_Column(Oligomer_Column, Full_Path)
-    Simulation_Name = Retrieve_Simulation_Name(Full_Path)
-    println("This is Simulation_Name: $Simulation_Name")
-    Oligomer_CSV_File = Location_Oligomer_CSV_File(directory)
-    Read_Oligomer_CSV_File = CSV.read(Oligomer_CSV_File, DataFrame)
-    Read_Oligomer_CSV_File[!, Simulation_Name] = Oligomer_Column
-    CSV.write(Oligomer_CSV_File, Read_Oligomer_CSV_File)
-end
-
-"""
-    Amorphous_Count_Excel(directory)
-
-Creates a new fibril count CSV file if it does not already exist.
+Initializes the fibril summary file `Appending_Fibril_Count.csv` if it does not exist.
 
 # Arguments
-- `directory`: Path to the directory containing Compare_Simulations folder.
+- `directory`: Root directory containing simulation data.
+- `Number_Timesteps`: Total number of simulation timesteps.
 
 # Calls
+- `Checks_Amorphous_Excel_Present`
 - `Append_Number_Timesteps`
 """
-function Amorphous_Count_Excel(directory)
-    if !Checks_Amorphous_Excel_Present(directory)
+
+function Amorphous_Count_Excel(directory, Number_Timesteps)
+    if Checks_Amorphous_Excel_Present(directory) == false
         Compare_Simulation_Directory = directory * "/Compare_Simulations"
         File_Name = "Appending_Fibril_Count.csv"
         Complete_File_Path = joinpath(Compare_Simulation_Directory, File_Name)
         Timesteps = Append_Number_Timesteps(Number_Timesteps)
         CSV.write(Complete_File_Path, Timesteps)
     end
+
 end
 
 """
-    Oligomer_Count_Excel(directory)
+    Checks_Amorphous_Excel_Present(directory::String) -> Bool
 
-Creates a new oligomer count CSV file if it does not already exist.
+Checks whether the fibril summary file (`Appending_Fibril_Count.csv`) exists.
 
 # Arguments
-- `directory`: Path to the directory containing Compare_Simulations folder.
+- `directory`: Root directory to check.
+
+# Returns
+- `false` if file is missing; `nothing` otherwise.
+
+# Notes
+- Prints a message if file is not found.
+"""
+
+
+function Checks_Amorphous_Excel_Present(directory)
+    Compare_Simulation_Directory = directory * "/Compare_Simulations"
+    CSV_File = "Appending_Fibril_Count.csv"
+    File_Path = joinpath(Compare_Simulation_Directory, CSV_File)
+    if !isfile(File_Path)
+        println("File is not found: $Compare_Simulation_Directory")
+        return false
+    end
+
+end
+
+"""
+    Oligomer_Count_Excel(directory::String, Number_Timesteps::Int)
+
+Initializes `Appending_Oligomer_Count.csv` if it doesn’t already exist.
+
+# Arguments
+- `directory`: Root folder for simulation results.
+- `Number_Timesteps`: Total number of simulation timesteps.
 
 # Calls
+- `Checks_Oligomer_Excel_Present`
 - `Append_Number_Timesteps`
 """
-function Oligomer_Count_Excel(directory)
-    if !Checks_Oligomer_Excel_Present(directory)
+
+
+function Oligomer_Count_Excel(directory, Number_Timesteps)
+    if Checks_Oligomer_Excel_Present(directory) == false
         Compare_Simulation_Directory = directory * "/Compare_Simulations"
         File_Name = "Appending_Oligomer_Count.csv"
         Complete_File_Path = joinpath(Compare_Simulation_Directory, File_Name)
@@ -211,33 +262,20 @@ function Oligomer_Count_Excel(directory)
 end
 
 """
-    Checks_Amorphous_Excel_Present(directory)
+    Checks_Oligomer_Excel_Present(directory::String) -> Bool
 
-Returns `true` if the fibril count CSV already exists, `false` otherwise.
-Also prints a message if the file is not found.
-
-# Arguments
-- `directory`: Path to the directory to check.
-"""
-function Checks_Amorphous_Excel_Present(directory)
-    Compare_Simulation_Directory = directory * "/Compare_Simulations"
-    CSV_File = "Appending_Fibril_Count.csv"
-    File_Path = joinpath(Compare_Simulation_Directory, CSV_File)
-    if !isfile(File_Path)
-        println("File is not found: $Compare_Simulation_Directory")
-        return false
-    end
-end
-
-"""
-    Checks_Oligomer_Excel_Present(directory)
-
-Returns `true` if the oligomer count CSV already exists, `false` otherwise.
-Also prints a message if the file is not found.
+Checks for the existence of `Appending_Oligomer_Count.csv`.
 
 # Arguments
-- `directory`: Path to the directory to check.
+- `directory`: Root directory of simulation outputs.
+
+# Returns
+- `false` if file is not found; `nothing` otherwise.
+
+# Notes
+- Helps avoid overwriting the summary file if it already exists.
 """
+
 function Checks_Oligomer_Excel_Present(directory)
     Compare_Simulation_Directory = directory * "/Compare_Simulations"
     CSV_File = "Appending_Oligomer_Count.csv"
@@ -246,64 +284,75 @@ function Checks_Oligomer_Excel_Present(directory)
         println("File is not found: $Compare_Simulation_Directory")
         return false
     end
+
 end
 
 """
     Append_Number_Timesteps(Number_Timesteps::Int) -> DataFrame
 
-Creates a DataFrame with a single column "Timesteps" ranging from 1 to `Number_Timesteps`.
+Creates a DataFrame with one column labeled `Timesteps`, ranging from 0 to `Number_Timesteps`.
 
 # Arguments
-- `Number_Timesteps`: Total number of timesteps to include.
+- `Number_Timesteps`: The number of time steps to record.
 
 # Returns
-- DataFrame with "Timesteps" column.
+- A DataFrame of the form:
+    Timesteps
+    0
+    1
+    ...
+    N
 """
-function Append_Number_Timesteps(Number_Timesteps)
-    return DataFrame(Timesteps = 1:Number_Timesteps)
+
+
+function Append_Number_Timesteps(Number_Timesteps) 
+    return timesteps = DataFrame(Timesteps = 0:Number_Timesteps)
 end
 
 """
     Location_Fibril_CSV_File(directory::String) -> String
 
-Constructs the file path for the fibril count CSV.
+Returns the full path to the central `Appending_Fibril_Count.csv` file.
 
 # Arguments
-- `directory`: Path to the base directory.
+- `directory`: Root folder of the simulation project.
 
 # Returns
-- Full path to "Appending_Fibril_Count.csv"
+- A string path to the fibril summary file.
 """
-function Location_Fibril_CSV_File(directory)
+
+function Location_Fibril_CSV_File(directory) 
     return joinpath(directory, "Compare_Simulations", "Appending_Fibril_Count.csv")
 end
 
 """
     Location_Oligomer_CSV_File(directory::String) -> String
 
-Constructs the file path for the oligomer count CSV.
+Returns the full path to the central `Appending_Oligomer_Count.csv` file.
 
 # Arguments
-- `directory`: Path to the base directory.
+- `directory`: Root folder of the simulation project.
 
 # Returns
-- Full path to "Appending_Oligomer_Count.csv"
+- A string path to the oligomer summary file.
 """
-function Location_Oligomer_CSV_File(directory)
+
+function Location_Oligomer_CSV_File(directory) 
     return joinpath(directory, "Compare_Simulations", "Appending_Oligomer_Count.csv")
 end
 
 """
     Retrieve_Simulation_Name(Path::String) -> String
 
-Extracts the simulation name (e.g., "Simulation1") from a file path.
+Extracts the simulation folder name from a full directory path using regex.
 
 # Arguments
-- `Path`: File path from which to extract the simulation folder name.
+- `Path`: Full path to the simulation directory.
 
 # Returns
-- The simulation folder name as a string.
+- The simulation folder name (e.g., "Simulation_2025-05-18_14-00-00").
 """
+
 function Retrieve_Simulation_Name(Path)
     Simulation_Name = match(r"(Simulation.*)$", Path)
     return Simulation_Name.match

@@ -7,38 +7,44 @@ using Dates
 """
     run_plot_all_monomer_states(directory::String, Total_Timesteps::Int)
 
-Generates a line plot showing the average number of monomers in each state (Amyloid, Native, Oligomer, Aggregate)
-over time, across multiple simulation runs. Reads data from summary CSVs stored in the `Compare_Simulations` folder 
-and computes row-wise averages to produce time-series curves.
+Generates a combined line plot showing the average count of each monomer state 
+(Native, Amyloid, Oligomer, Aggregate) across all simulations over time. This 
+function is part of the FAIR post-analysis pipeline and uses pre-aggregated 
+CSV data stored in the `Compare_Simulations` folder.
 
 # Arguments
-- `directory::String`: Path to the base directory containing the `Compare_Simulations` folder.
-- `Total_Timesteps::Int`: Total number of timesteps to plot on the X-axis.
+- `directory::String`: Path to the root directory containing the `Compare_Simulations` folder.
+- `Total_Timesteps::Int`: Total number of timesteps included in the simulation.
 
 # Behavior
-- Reads four files: `Appending_Amyloid_Count.csv`, `Appending_Native_Count.csv`,
-  `Appending_Oligomer_Count.csv`, and `Appending_Fibril_Count.csv`.
-- Calculates the mean value at each timestep across all simulations for each monomer type.
-- Produces a single plot displaying the average value of each species over time.
-- Saves the resulting plot as a PNG file with a timestamped filename.
+- Reads four input CSVs: 
+  - `Appending_Amyloid_Count.csv`
+  - `Appending_Native_Count.csv`
+  - `Appending_Oligomer_Count.csv`
+  - `Appending_Fibril_Count.csv`
+- Each file contains simulation results across multiple runs. The function computes
+  the mean value at each timestep by averaging across all simulations.
+- All four species are plotted together on the same graph against time (0 to Total_Timesteps).
+- The final figure is saved as a timestamped `.png` in the `Compare_Simulations/` folder.
 
 # Output
-- A time-resolved PNG plot saved to `Compare_Simulations/` in the specified directory.
+- `Average_All_Monomers_States_vs_Timesteps_<timestamp>.png`: Line plot visualizing
+  the time evolution of the average monomer counts.
+
+# Notes
+- This function assumes that each CSV file has the same number of timesteps and that
+  the first column is a shared `Timesteps` vector.
+- Missing values in the simulation CSVs are automatically skipped when calculating means.
+
+# FAIR Principles
+- **Findable**: Output files are named with timestamps and saved in a centralized analysis directory.
+- **Accessible**: Outputs use standard formats (CSV and PNG) that are easy to open and interpret.
+- **Interoperable**: The function works directly on cleanly structured tabular data.
+- **Reusable**: Modular structure allows the function to be reused or extended to other monomer species.
 """
+
+
 function run_plot_all_monomer_states(directory::String, Total_Timesteps::Int)
-
-    """
-        process_data(file_path::String) -> Vector{Float64}
-
-    Reads a CSV file and computes the row-wise average across all simulation columns,
-    skipping any missing values.
-
-    # Arguments
-    - `file_path::String`: Full path to the CSV file to process.
-
-    # Returns
-    - A vector of Float64 values representing the average count per timestep.
-    """
     function process_data(file_path::String)
         data = CSV.read(file_path, DataFrame)
         mean_values = Float64[]
@@ -72,7 +78,7 @@ function run_plot_all_monomer_states(directory::String, Total_Timesteps::Int)
     Aggregate_Mean = process_data(aggregate_file)
 
     # X-axis: timesteps
-    Timesteps = 1:Total_Timesteps
+    Timesteps = 0:Total_Timesteps
 
     # Create the plot
     plot(Timesteps, Amyloid_Mean, label="Amyloid", linewidth=2, linecolor=:orange)

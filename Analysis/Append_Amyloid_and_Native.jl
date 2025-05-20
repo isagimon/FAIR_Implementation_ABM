@@ -57,47 +57,38 @@ Main function that processes simulation results for amyloid-prone and native mon
 """
 # Main execution function
 function run_append_amyloid_and_native(directory::String, Number_Timesteps::Int)
-    # Initialize arrays to store averages from timestep 0 to Number_Timesteps (inclusive)
-    Avg_Oligomer_Count = zeros(Int, Number_Timesteps + 1, 2) #TIMESTEP HAS TO BEGIN AT ZERO 
-    Avg_Fibril_Count = zeros(Int, Number_Timesteps + 1, 2) #TIMESTEP HAS TO BEGIN AT ZERO 
-
-    timestamp = string(now(), dateformat"mm-dd-yyyy HH:MM:SS.sss")
-
-    # Core function to process Excel sheets
-    function Extract_Aggregate_Count_Excel_Sheets()
-        Amyloid_Count_Excel(directory)
-        Native_Count_Excel(directory)
-        All_Folders = readdir(directory, join=true)
-        Simulation_Folders = filter(folder -> isdir(folder) && startswith(basename(folder), "Simulation"), All_Folders)
-
-        for Folder in Simulation_Folders
-            Simulation_Results_File = joinpath(Folder, "Native_and_Amyloid_Count_Results.csv")
-            println("This is Folder: $Folder")
-            Save_Amyloid_Count_Column(Simulation_Results_File, Folder)
-            Save_Native_Count_Column(Simulation_Results_File, Folder)
-        end
+    Amyloid_Count_Excel(directory, Number_Timesteps)
+    Native_Count_Excel(directory, Number_Timesteps)
+    All_Folders = readdir(directory, join=true)
+    Simulation_Folders = filter(folder -> isdir(folder) && startswith(basename(folder), "Simulation"), All_Folders)
+    
+    for Folder in Simulation_Folders
+        #Line_Graph_Folder = joinpath(Folder, "Line_Graphs")
+        Simulation_Results_File = joinpath(Folder, "Native_and_Amyloid_Count_Results.csv")
+        println("This is Folder: $Folder")
+        Save_Amyloid_Count_Column(Simulation_Results_File, Folder)
+        #println("This is the Amorphous_Count_File: ",Amorphous_Count_File)
+        Save_Native_Count_Column(Simulation_Results_File, Folder)
+        #println("This is the Oligomer_Count_File: ",Oligomer_Count_File)
     end
-
-    # Run the extraction process
-    Extract_Aggregate_Count_Excel_Sheets()
 end
-
 
 """
     Save_Amyloid_Count_Column(Amorphous_Count_File, Full_Path)
 
-Extracts the amyloid monomer count column (3rd column) from a simulation results file
-and formats it as a DataFrame.
+Extracts the amyloid monomer count column from a simulation result CSV file and 
+prepares it for aggregation by wrapping it in a standardized DataFrame.
 
 # Arguments
-- `Amorphous_Count_File`: Path to the CSV file `Native_and_Amyloid_Count_Results.csv`.
-- `Full_Path`: Full path to the simulation folder.
+- `Amorphous_Count_File`: The full path to the CSV file containing simulation results.
+- `Full_Path`: Full path to the current simulation folder.
 
 # Calls
-- `Append_Amyloid_Column`
-"""
+- `Append_Amyloid_Column()` to insert the extracted column into the aggregated results.
 
-# All helper functions remain the same but now use `directory` and `Number_Timesteps` dynamically
+# Notes
+- The function assumes the amyloid count is in the third column of the result CSV.
+"""
 function Save_Amyloid_Count_Column(Amorphous_Count_File, Full_Path)
     Read_File = CSV.read(Amorphous_Count_File, DataFrame)
     Aggregate_Column_Name = names(Read_File)[3]
@@ -107,16 +98,20 @@ function Save_Amyloid_Count_Column(Amorphous_Count_File, Full_Path)
 end
 
 """
-    Append_Amyloid_Column(Aggregate_Column::DataFrame, Full_Path::String)
+    Append_Amyloid_Column(Aggregate_Column, Full_Path)
 
-Appends amyloid monomer count data as a new column to the central summary CSV.
+Appends amyloid monomer count data for a single simulation to the aggregated 
+summary CSV file `Appending_Amyloid_Count.csv`.
 
 # Arguments
-- `Aggregate_Column`: DataFrame containing amyloid monomer counts.
-- `Full_Path`: Path to the simulation folder used to name the column.
+- `Aggregate_Column`: A DataFrame containing a single column of amyloid counts.
+- `Full_Path`: Path to the simulation folder, used to extract the simulation name.
+
+# Global variables used
+- `directory` (must be defined externally)
 
 # Notes
-- Uses the folder name (e.g., Simulation1) as the new column header.
+- If the output CSV already contains a column for the simulation, it will be overwritten.
 """
 
 function Append_Amyloid_Column(Aggregate_Column, Full_Path)
@@ -130,13 +125,20 @@ function Append_Amyloid_Column(Aggregate_Column, Full_Path)
 end
 
 """
-    Append_Native_Column(Oligomer_Column::Vector, Full_Path::String)
+    Append_Native_Column(Oligomer_Column, Full_Path)
 
-Appends native monomer count data to the central summary CSV.
+Appends a single simulation’s native monomer data to the 
+`Appending_Native_Count.csv` file in `Compare_Simulations/`.
 
 # Arguments
-- `Oligomer_Column`: Vector of native monomer counts.
-- `Full_Path`: Path to the simulation folder used to label the column.
+- `Oligomer_Column`: Vector or column of native monomer counts.
+- `Full_Path`: Full path to the simulation folder, used to retrieve simulation name.
+
+# Global variables used
+- `directory`
+
+# Notes
+- The appended column is not renamed. It is added with the simulation name as its header.
 """
 
 function Append_Native_Column(Oligomer_Column, Full_Path)
@@ -146,22 +148,27 @@ function Append_Native_Column(Oligomer_Column, Full_Path)
     Read_Oligomer_CSV_File = CSV.read(Oligomer_CSV_File, DataFrame)
     Read_Oligomer_CSV_File[!, Simulation_Name] = Oligomer_Column
     CSV.write(Oligomer_CSV_File, Read_Oligomer_CSV_File)
+
 end
 
 """
-    Save_Native_Count_Column(Oligomer_Count_File::String, Full_Path::String)
+    Save_Native_Count_Column(Oligomer_Count_File, Full_Path)
 
-Extracts the native monomer count column (2nd column) from the simulation result CSV file 
-(`Native_and_Amyloid_Count_Results.csv`) and prepares it for appending to the summary CSV.
+Extracts the native monomer column from a simulation result CSV file and passes it
+to be appended to the native monomer master CSV.
 
 # Arguments
-- `Oligomer_Count_File`: Path to the simulation results CSV.
-- `Full_Path`: Full path to the simulation folder used to name the new column.
+- `Oligomer_Count_File`: Path to CSV with native and amyloid monomer counts.
+- `Full_Path`: Path to simulation folder used for naming.
 
 # Calls
-- `Append_Native_Column`
+- `Append_Native_Column()`
+
+# Notes
+- Assumes native monomer count is in the second column of the file.
 """
-function Save_Native_Count_Column(Oligomer_Count_File, Full_Path)
+
+function Save_Native_Count_Column(Oligomer_Count_File, Full_Path) #NATIVE COUNT
     Read_File = CSV.read(Oligomer_Count_File, DataFrame)
     Oligomer_Column_Name = names(Read_File)[2]
     Oligomer_Column_Data = Read_File[!, Oligomer_Column_Name]
@@ -170,42 +177,49 @@ function Save_Native_Count_Column(Oligomer_Count_File, Full_Path)
 end
 
 """
-    Amyloid_Count_Excel(directory::String)
+    Amyloid_Count_Excel(directory, Number_Timesteps)
 
-Initializes the amyloid summary CSV (`Appending_Amyloid_Count.csv`) with a "Timesteps" column 
-if the file does not already exist.
+Creates `Appending_Amyloid_Count.csv` if it does not already exist.
 
 # Arguments
-- `directory`: Path to the directory containing `Compare_Simulations`.
-
-# Global Dependencies
-- Assumes `Number_Timesteps` is accessible in scope.
+- `directory`: Path to the root simulation directory.
+- `Number_Timesteps`: Number of simulation steps to include in the file.
 
 # Calls
-- `Append_Number_Timesteps`
+- `Checks_Amorphous_Excel_Present()`
+- `Append_Number_Timesteps()`
+
+# Notes
+- The CSV is initialized with a `Timesteps` column from 0 to `Number_Timesteps`.
 """
-function Amyloid_Count_Excel(directory)
-    if !Checks_Amorphous_Excel_Present(directory)
+
+function Amyloid_Count_Excel(directory, Number_Timesteps) #AMYLOID
+    if Checks_Amorphous_Excel_Present(directory) == false
         Compare_Simulation_Directory = directory * "/Compare_Simulations"
         File_Name = "Appending_Amyloid_Count.csv"
         Complete_File_Path = joinpath(Compare_Simulation_Directory, File_Name)
         Timesteps = Append_Number_Timesteps(Number_Timesteps)
         CSV.write(Complete_File_Path, Timesteps)
     end
+
 end
 
 """
-    Checks_Amorphous_Excel_Present(directory::String) -> Bool
+    Checks_Amorphous_Excel_Present(directory) -> Bool
 
-Checks whether the amyloid summary file (`Appending_Amyloid_Count.csv`) exists.
+Checks whether `Appending_Amyloid_Count.csv` exists in `Compare_Simulations/`.
 
 # Arguments
-- `directory`: Directory path where the file should be located.
+- `directory`: Root path to simulation data.
 
 # Returns
-- `true` if file exists; otherwise `false` with a printed warning.
+- `false` if the file is missing; otherwise returns `nothing`.
+
+# Notes
+- Prints a message if the file is not found.
 """
-function Checks_Amorphous_Excel_Present(directory)
+
+function Checks_Amorphous_Excel_Present(directory) #AMYLOID
     Compare_Simulation_Directory = directory * "/Compare_Simulations"
     CSV_File = "Appending_Amyloid_Count.csv"
     File_Path = joinpath(Compare_Simulation_Directory, CSV_File)
@@ -213,25 +227,29 @@ function Checks_Amorphous_Excel_Present(directory)
         println("File is not found: $Compare_Simulation_Directory")
         return false
     end
+
 end
 
 """
-    Native_Count_Excel(directory::String)
+    Native_Count_Excel(directory, Number_Timesteps)
 
-Initializes the native monomer summary CSV (`Appending_Native_Count.csv`) with a "Timesteps" column 
-if the file does not already exist.
+Creates `Appending_Native_Count.csv` if it does not already exist.
 
 # Arguments
-- `directory`: Path to the directory containing `Compare_Simulations`.
-
-# Global Dependencies
-- Assumes `Number_Timesteps` is accessible in scope.
+- `directory`: Path to the root simulation directory.
+- `Number_Timesteps`: Number of simulation steps to include in the file.
 
 # Calls
-- `Append_Number_Timesteps`
+- `Checks_Oligomer_Excel_Present()`
+- `Append_Number_Timesteps()`
+
+# Notes
+- The CSV is initialized with a single `Timesteps` column.
 """
-function Native_Count_Excel(directory)
-    if !Checks_Oligomer_Excel_Present(directory)
+
+
+function Native_Count_Excel(directory, Number_Timesteps) #NATIVE
+    if Checks_Oligomer_Excel_Present(directory) == false
         Compare_Simulation_Directory = directory * "/Compare_Simulations"
         File_Name = "Appending_Native_Count.csv"
         Complete_File_Path = joinpath(Compare_Simulation_Directory, File_Name)
@@ -241,16 +259,21 @@ function Native_Count_Excel(directory)
 end
 
 """
-    Checks_Oligomer_Excel_Present(directory::String) -> Bool
+    Checks_Oligomer_Excel_Present(directory) -> Bool
 
-Checks whether the native monomer summary file (`Appending_Native_Count.csv`) exists.
+Checks whether `Appending_Native_Count.csv` exists in `Compare_Simulations/`.
 
 # Arguments
-- `directory`: Directory path where the file should be located.
+- `directory`: Root path to simulation data.
 
 # Returns
-- `true` if file exists; otherwise `false` with a printed warning.
+- `false` if the file is missing; otherwise returns `nothing`.
+
+# Notes
+- Used to avoid overwriting existing summary files.
 """
+
+
 function Checks_Oligomer_Excel_Present(directory)
     Compare_Simulation_Directory = directory * "/Compare_Simulations"
     CSV_File = "Appending_Native_Count.csv"
@@ -259,69 +282,66 @@ function Checks_Oligomer_Excel_Present(directory)
         println("File is not found: $Compare_Simulation_Directory")
         return false
     end
+
 end
 
 """
-    Append_Number_Timesteps(Number_Timesteps::Int) -> DataFrame
+    Append_Number_Timesteps(Number_Timesteps) -> DataFrame
 
-Creates a DataFrame with a "Timesteps" column ranging from 1 to `Number_Timesteps`.
+Generates a `DataFrame` with a single `Timesteps` column ranging from 0 to `Number_Timesteps`.
 
 # Arguments
-- `Number_Timesteps`: Total number of simulation steps.
+- `Number_Timesteps`: The total number of simulation steps.
 
 # Returns
-- DataFrame with a single "Timesteps" column.
+- A DataFrame like: Timesteps = [0, 1, 2, ..., Number_Timesteps]
 """
-function Append_Number_Timesteps(Number_Timesteps)
-    return DataFrame(Timesteps = 1:Number_Timesteps)
+
+function Append_Number_Timesteps(Number_Timesteps) 
+    return timesteps = DataFrame(Timesteps = 0:Number_Timesteps)
 end
 
 """
-    Location_Amyloid_CSV_File(directory::String) -> String
+    Location_Amyloid_CSV_File(directory) -> String
 
-Constructs the full file path to the amyloid monomer summary CSV file.
+Returns the full path to `Appending_Amyloid_Count.csv` within the `Compare_Simulations/` folder.
 
 # Arguments
-- `directory`: Root path of the simulation folder.
-
-# Returns
-- Full file path to `Appending_Amyloid_Count.csv`.
+- `directory`: Root directory where simulation results are stored.
 """
-function Location_Amyloid_CSV_File(directory)
+
+
+function Location_Amyloid_CSV_File(directory) 
     return joinpath(directory, "Compare_Simulations", "Appending_Amyloid_Count.csv")
 end
 
 """
-    Location_Native_CSV_File(directory::String) -> String
+    Location_Native_CSV_File(directory) -> String
 
-Constructs the full file path to the native monomer summary CSV file.
+Returns the full path to `Appending_Native_Count.csv` in `Compare_Simulations/`.
 
 # Arguments
-- `directory`: Root path of the simulation folder.
-
-# Returns
-- Full file path to `Appending_Native_Count.csv`.
+- `directory`: Root directory where simulation results are stored.
 """
-function Location_Native_CSV_File(directory)
+
+function Location_Native_CSV_File(directory) #NATIVE COUNT
     return joinpath(directory, "Compare_Simulations", "Appending_Native_Count.csv")
 end
 
 """
-    Retrieve_Simulation_Name(Path::String) -> String
+    Retrieve_Simulation_Name(Path) -> String
 
-Extracts the simulation folder name (e.g., "Simulation1") from a full file path.
+Extracts the simulation folder name from a full path using a regular expression.
 
 # Arguments
-- `Path`: Full file path including the simulation folder.
+- `Path`: Full file path to a simulation folder.
 
 # Returns
-- Name of the simulation folder as a string.
+- A string like `"Simulation_2025-05-18_14-00-00"`, used for naming output columns.
 """
+
+
 function Retrieve_Simulation_Name(Path)
     Simulation_Name = match(r"(Simulation.*)$", Path)
     return Simulation_Name.match
-end
-
-function Append_Number_Timesteps(Number_Timesteps)
-    return DataFrame(Timesteps = 0:Number_Timesteps)
 end
