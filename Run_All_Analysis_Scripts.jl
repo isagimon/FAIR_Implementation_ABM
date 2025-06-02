@@ -34,7 +34,7 @@ println("Total Number of Monomers: ", Total_Number_Monomers)
 # ------------------------------------------------------------------------
 
 # Load the script that extracts native and amyloid monomer counts
-include("$basic_directory/Analysis/Append_Amyloid_and_Native.jl")
+include("$basic_directory/Analysis/Append_AggregateProne_and_Native.jl")
 
 # Load the script that extracts aggregate and oligomer counts
 include("$basic_directory/Analysis/Append_Aggregate_and_Oligomer.jl")
@@ -47,7 +47,7 @@ include("$basic_directory/Analysis/Average_All_Monomers_vs_Timesteps.jl")
 # ------------------------------------------------------------------------
 
 # Append native and amyloid monomer count data across all simulations
-run_append_amyloid_and_native(directory, Number_Timesteps)
+run_append_AggregateProne_and_native(directory, Number_Timesteps)
 
 # Append aggregate and oligomer count data into combined CSVs
 run_process_aggregate_excel_sheets(directory, Number_Timesteps)

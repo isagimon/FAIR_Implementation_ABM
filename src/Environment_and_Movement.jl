@@ -10,7 +10,7 @@ using Base.Threads
 Module: Environment_and_Movement
 
 Performs the simulation of protein aggregation dynamics using a 3D lattice.
-Includes monomer diffusion, conformational transitions (Native ↔ Amyloid), and aggregation (Oligomer, Fibril).
+Includes monomer diffusion, conformational transitions (Native ↔ aggregateProne), and aggregation (Oligomer, Fibril).
 Implements FAIR principles:
 
 - **Findable**: Structured naming, exported per-timestep state CSVs.
@@ -35,16 +35,16 @@ include("Agents.jl")
 
 # Simulation controls
 const MAX_NumberMovements        = Float64(Parameters["MAX_NumberMovements"])        # Maximum number of simulation timesteps
-const Native_to_Amyloid         = Float64(Parameters["Native_to_Amyloid"])           # Probability of native to amyloid transition, P(Native → Amyloid)
-const Amyloid_to_Native         = Float64(Parameters["Amyloid_to_Native"])           # Probability of amyloid to native transition, P(Amyloid → Native)
-const Oligomer_Formation        = Float64(Parameters["Oligomer_Formation"])          # Probability of oligomer formation, P(2 Amyloid → Oligomer)
+const Native_to_AggregateProne  = Float64(Parameters["Native_to_AggregateProne"])           # Probability of native to aggregateProne transition, P(Native → AggregateProne)
+const AggregateProne_to_Native  = Float64(Parameters["AggregateProne_to_Native"])           # Probability of aggregateProne to native transition, P(AggregateProne → Native)
+const Oligomer_Formation        = Float64(Parameters["Oligomer_Formation"])          # Probability of oligomer formation, P(2 AggregateProne → Oligomer)
 const Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rate"]) # Probability of oligomer dissociation, P(Oligomer → monomers)
-const Fibril_Formation          = Float64(Parameters["Fibril_Formation"])            # Probability of fibril formation, P(Amyloid + Oligomer → Fibril)
-const Fibril_Growth             = Float64(Parameters["Fibril_Growth"])               # Probability of fibril growth, P(Fibril + Amyloid → Grow)
+const Fibril_Formation          = Float64(Parameters["Fibril_Formation"])            # Probability of fibril formation, P(AggregateProne + Oligomer → Fibril)
+const Fibril_Growth             = Float64(Parameters["Fibril_Growth"])               # Probability of fibril growth, P(Fibril + AggregateProne → Grow)
 const Directory                 = String(Parameters["Directory"])
 
 # Derived parameter
-global max_fibril_size = Max_NumberMonomers_Amyloid + Max_NumberMonomers_Native
+global max_fibril_size = Max_NumberMonomers_AggregateProne + Max_NumberMonomers_Native
 
 ##########################
 # GLOBAL STATE VARIABLES
@@ -70,7 +70,7 @@ global available_numbers = collect(1:200000)    # Array of available unique numb
 ##########################
 
 results_df       = DataFrame(Timestep = Int[], Oligomers = Int[], Aggregates = Int[])                # DataFrame to store simulation results
-results_df_two   = DataFrame(Timestep = Int[], Native = Int[], Amyloid = Int[])                      # DataFrame to store native and amyloid counts
+results_df_two   = DataFrame(Timestep = Int[], Native = Int[], AggregateProne = Int[])                      # DataFrame to store native and aggregateProne counts
 msd_data         = DataFrame(Timestep = Int[], MSD_Monomer = Float64[], MSD_Aggregate = Float64[])   # DataFrame to store MSD data
 
 ##########################
@@ -127,10 +127,10 @@ Saves the input parameters of the simulation to a CSV file.
 - `timestamp`
 - `Lattice_Size`
 - `Max_NumberMonomers_Native`
-- `Max_NumberMonomers_Amyloid`
+- `Max_NumberMonomers_AggregateProne`
 - `MAX_NumberMovements`
-- `Native_to_Amyloid`
-- `Amyloid_to_Native`
+- `Native_to_AggregateProne`
+- `AggregateProne_to_Native`
 - `Oligomer_Formation`
 - `Oligomer_Dissociation_rate`
 - `Fibril_Formation`
@@ -149,8 +149,8 @@ function Input_Parameters()
     
     Data = DataFrame(
     File_Name = [timestamp], Lattice_Size = [Lattice_Size::Int], Number_Native_Monomers = [Max_NumberMonomers_Native::Int],
-    Number_Amyloid_Monomers = [Max_NumberMonomers_Amyloid::Int], Timesteps = [MAX_NumberMovements::Int], Probability_Native_to_Amyloid = [Native_to_Amyloid::Float64],
-    Probability_Amyloid_to_Native = [Amyloid_to_Native::Float64], Probability_Oligomer_Formation = [Oligomer_Formation::Float64], Probability_Oligomer_Dissociation = [Oligomer_Dissociation_rate::Float64],
+    Number_AggregateProne_Monomers = [Max_NumberMonomers_AggregateProne::Int], Timesteps = [MAX_NumberMovements::Int], Probability_Native_to_AggregateProne = [Native_to_AggreagateProne::Float64],
+    Probability_AggregateProne_to_Native = [AggregateProne_to_Native::Float64], Probability_Oligomer_Formation = [Oligomer_Formation::Float64], Probability_Oligomer_Dissociation = [Oligomer_Dissociation_rate::Float64],
     Probability_Fibril_Formation = [Fibril_Formation::Float64], Probability_Fibril_Growth = [Fibril_Growth::Float64], Probability_Fibril_No_Growth = [Fibril_No_Growth::Float64]
 )
     Append_Input_Parameters(File_Path, Data)
@@ -257,7 +257,7 @@ Initializes DataFrames to store simulation results.
 function Intial_Conditions()
     global results_df_two
     global results_df
-    push!(results_df_two, (0,Max_NumberMonomers_Native, Max_NumberMonomers_Amyloid ))
+    push!(results_df_two, (0,Max_NumberMonomers_Native, Max_NumberMonomers_AggregateProne ))
     push!(results_df, (0, 0, 0))
 end
 
@@ -279,7 +279,7 @@ Saves the Mean Squared Displacement (MSD) data for monomers and aggregates.
 
 function Save_MSD_Data(timesteps)
     global msd_data
-    msd_calculated_monomers = compute_MSD() #This only meant for native or amyloid monomers
+    msd_calculated_monomers = compute_MSD() #This only meant for native or AggregateProne monomers
     msd_calculated_aggregates = compute_MSD_aggregates()
     push!(msd_data, (timesteps, msd_calculated_monomers, msd_calculated_aggregates))
 end
@@ -416,31 +416,31 @@ function Count_Oligomers_Aggregates()
 end
 
 """
-Count_Native_Amyloid()
+Count_Native_AggregateProne()
 
-Counts the number of native and amyloid monomers in the lattice.
+Counts the number of native and AggregateProne monomers in the lattice.
 
 # Global variables read
 - `Locations_and_States_Dict`
 
 # Returns
-- `Tuple{Int, Int}`: The count of native and amyloid monomers.
+- `Tuple{Int, Int}`: The count of native and AggregateProne monomers.
 """
 
-function Count_Native_Amyloid()
+function Count_Native_AggregateProne()
     native_count = 0
-    amyloid_count = 0
+    AggregateProne_count = 0
 
     # Loop through the dictionary to count monomers in state 3 and 4
     for (_, (state, _)) in Locations_and_States_Dict
         if state == 1
             native_count += 1
         elseif state == 2
-            amyloid_count += 1
+            AggregateProne_count += 1
         end
     end
 
-    return native_count, amyloid_count
+    return native_count, AggregateProne_count
 
 end
 
@@ -466,22 +466,22 @@ function Save_Data(timestep, oligomers, aggregates)
 end
 
 """
-Save_Data_Two(timesteps, native, amyloid)
+Save_Data_Two(timesteps, native, AggregateProne)
 
-Saves the counts of native and amyloid monomers for a given timestep.
+Saves the counts of native and AggregateProne monomers for a given timestep.
 
 # Arguments
 - `timesteps::Int`: The current timestep.
 - `native::Int`: The count of native monomers.
-- `amyloid::Int`: The count of amyloid monomers.
+- `AggregateProne::Int`: The count of AggregateProne monomers.
 
 # Global variables modified
 - `results_df_two`
 """
 
-function Save_Data_Two(timesteps, native, amyloid)
+function Save_Data_Two(timesteps, native, AggregateProne)
     global results_df_two
-    push!(results_df_two, (timesteps, native, amyloid))
+    push!(results_df_two, (timesteps, native, AggregateProne))
 end
 
 """
@@ -553,7 +553,7 @@ end
 """
 Export_Final_Results_Two()
 
-Exports the final counts of native and amyloid monomers to a CSV file.
+Exports the final counts of native and AggregateProne monomers to a CSV file.
 
 # Global variables read
 - `directory`
@@ -564,7 +564,7 @@ function Export_Final_Results_Two()
     global directory = "$Directory/Simulation_$timestamp"
     
     # Write the CSV file
-    file_path = "$directory/Native_and_Amyloid_Count_Results.csv"
+    file_path = "$directory/Native_and_AggregateProne_Count_Results.csv"
     CSV.write(file_path, results_df_two)
 end
 
@@ -591,7 +591,7 @@ Total_Monomers()
 Calculates the total number of monomers in the simulation.
 
 # Global variables read
-- `Max_NumberMonomers_Amyloid`
+- `Max_NumberMonomers_AggregateProne`
 - `Max_NumberMonomers_Native`
 
 # Returns
@@ -599,7 +599,7 @@ Calculates the total number of monomers in the simulation.
 """
 
 function Total_Monomers()
-    Total_Monomers = Max_NumberMonomers_Amyloid + Max_NumberMonomers_Native
+    Total_Monomers = Max_NumberMonomers_AggregateProne + Max_NumberMonomers_Native
     return Total_Monomers
 end
 
@@ -695,7 +695,7 @@ Simulates the movement and interactions of monomers in the lattice.
 - Movement functions (e.g., `Movement_One_Coordinate`, etc.)
 - `Distinguishing_Monomers`
 - `Count_Oligomers_Aggregates`
-- `Count_Native_Amyloid`
+- `Count_Native_AggregateProne`
 - `Save_Data`
 - `Save_Data_Two`
 - `Save_MSD_Data`
@@ -760,14 +760,14 @@ function Movement()
            oligomer_keys = Filter_Oligomer()
            aggregate_keys = Filter_Aggregate()
            native_keys = Filter_Native()
-           amyloid_keys = Filter_Amyloid()
+           AggregateProne_keys = Filter_AggregateProne()
            
            oligomers, aggregates = length(oligomer_keys), length(aggregate_keys)
-           native, amyloid = length(native_keys), length(amyloid_keys)
+           native, AggregateProne = length(native_keys), length(AggregateProne_keys)
 
           # Save data for this timestep
           Save_Data(timesteps, oligomers, aggregates)
-          Save_Data_Two(timesteps, native, amyloid)
+          Save_Data_Two(timesteps, native, AggregateProne)
           Save_MSD_Data(timesteps)
           Count_Fibril_Length(timesteps)
         # Timing for the timestep
@@ -2359,7 +2359,7 @@ Distinguishes between different types of monomers and calls the appropriate move
 # Calls
 - `Retrieve_State_Monomer`
 - `Native_Move_or_Conformational_Change`
-- `Amyloid_Aggregation_or_Movement`
+- `AggregateProne_Aggregation_or_Movement`
 - `Oligomer_Move`
 - `Fibril_Move`
 """
@@ -2370,7 +2370,7 @@ function Distinguishing_Monomers(Monomer, Desired_Location, Type_of_Movement)
     if State == 1
         Native_Move_or_Conformational_Change(Monomer, Desired_Location)
     elseif State == 2
-        Amyloid_Aggregation_or_Movement(Monomer, Desired_Location)
+        AggregateProne_Aggregation_or_Movement(Monomer, Desired_Location)
     elseif State == 3
         Oligomer_Move(Monomer, Desired_Location, Type_of_Movement)
     elseif State == 4
@@ -2414,7 +2414,7 @@ function Monomer_State(State)
     if State == 1
         return "Native"
     elseif State == 2
-        return "Amyloid"
+        return "AggregateProne"
     elseif State == 3
         return "Oligomer"
     elseif State == 4
@@ -2501,7 +2501,7 @@ end
 """
 Conformational_Change(Monomer)
 
-Changes the state of a monomer between Native (1) and Amyloid (2).
+Changes the state of a monomer between Native (1) and AggregateProne (2).
 
 # Arguments
 - `Monomer::Tuple{Float64, Float64, Float64}`: The coordinates of the monomer.
@@ -2518,10 +2518,10 @@ function Conformational_Change(Monomer)
     State, Unique_Number = Locations_and_States_Dict[Monomer]
 
     if State == 1
-        # Change state from Native (1) to Amyloid (2)
+        # Change state from Native (1) to AggregateProne (2)
         Update_Locations_States(Monomer, 2, Unique_Number)
     elseif State == 2
-        # Change state from Amyloid (2) to Native (1)
+        # Change state from AggregateProne (2) to Native (1)
         Update_Locations_States(Monomer, 1, Unique_Number)
     end
 
@@ -2538,7 +2538,7 @@ Handles the movement or conformational change of a Native monomer.
 - `Desired_Location::Tuple{Float64, Float64, Float64}`: The desired coordinates for the monomer.
 
 # Global variables read
-- `Native_to_Amyloid`
+- `Native_to_AggregateProne`
 
 # Calls
 - `Retrieve_State_Monomer`
@@ -2554,12 +2554,12 @@ function Native_Move_or_Conformational_Change(Monomer, Desired_Location)
     if State == 0  # Available if state is empty (0)
         One_Monomer_Movement(Monomer, Desired_Location)
         # Only allow conformational change within this block
-        if Random_Dice() < Native_to_Amyloid
+        if Random_Dice() < Native_to_AggregateProne
             Conformational_Change(Desired_Location)
         end
     else
         # Handle conformational change only if movement doesn't happen
-        if Random_Dice() < Native_to_Amyloid
+        if Random_Dice() < Native_to_AggregateProne
             Conformational_Change(Monomer)
         end
     end
@@ -2567,16 +2567,16 @@ function Native_Move_or_Conformational_Change(Monomer, Desired_Location)
 end
 
 """
-Amyloid_Aggregation_or_Movement(Monomer, Desired_Location)
+AggregateProne_Aggregation_or_Movement(Monomer, Desired_Location)
 
-Handles the aggregation or movement of an Amyloid monomer.
+Handles the aggregation or movement of an AggregateProne monomer.
 
 # Arguments
 - `Monomer::Tuple{Float64, Float64, Float64}`: The current coordinates of the monomer.
 - `Desired_Location::Tuple{Float64, Float64, Float64}`: The desired coordinates for the monomer.
 
 # Global variables read
-- `Amyloid_to_Native`
+- `AggregateProne_to_Native`
 
 # Calls
 - `Retrieve_State_Monomer`
@@ -2584,10 +2584,10 @@ Handles the aggregation or movement of an Amyloid monomer.
 - `One_Monomer_Movement`
 - `Random_Dice`
 - `Conformational_Change`
-- `Amyloid_Aggregation`
+- `AggregateProne_Aggregation`
 """
 
-function Amyloid_Aggregation_or_Movement(Monomer, Desired_Location)
+function AggregateProne_Aggregation_or_Movement(Monomer, Desired_Location)
 
     Status_Desired_Location = Retrieve_State_Monomer(Desired_Location)
     location_state = Monomer_State(Status_Desired_Location)
@@ -2595,17 +2595,17 @@ function Amyloid_Aggregation_or_Movement(Monomer, Desired_Location)
     if Status_Desired_Location == 0
         # Case 1: Move the monomer to an empty location
         One_Monomer_Movement(Monomer, Desired_Location)
-        if Random_Dice() < Amyloid_to_Native
+        if Random_Dice() < AggregateProne_to_Native
             Conformational_Change(Desired_Location)
         end
     elseif Status_Desired_Location == 2 || Status_Desired_Location == 3
-        # Case 2: Handle amyloid aggregation
-        Amyloid_Aggregation(Monomer, Desired_Location, location_state)
+        # Case 2: Handle AggregateProne aggregation
+        AggregateProne_Aggregation(Monomer, Desired_Location, location_state)
         Status_Monomer = Retrieve_State_Monomer(Monomer)
-        if Status_Monomer == 2 && Random_Dice() < Amyloid_to_Native
+        if Status_Monomer == 2 && Random_Dice() < AggregateProne_to_Native
             Conformational_Change(Monomer)
         end
-    elseif Random_Dice() < Amyloid_to_Native #If the state is 1, 4, or 5
+    elseif Random_Dice() < AggregateProne_to_Native #If the state is 1, 4, or 5
         # Case 3: Apply conformational change directly if no other conditions are met
         Conformational_Change(Monomer)
     end
@@ -2666,13 +2666,13 @@ function No_Repeating_Unique_Number_Locked(UniqueCode)
 end
 
 """
-Amyloid_Amyloid_Lock(Monomer, Desired_Location)
+AggregateProne_AggregateProne_Lock(Monomer, Desired_Location)
 
-Handles the aggregation of two Amyloid monomers into an Oligomer.
+Handles the aggregation of two AggregateProne monomers into an Oligomer.
 
 # Arguments
-- `Monomer::Tuple{Float64, Float64, Float64}`: The coordinates of the first Amyloid monomer.
-- `Desired_Location::Tuple{Float64, Float64, Float64}`: The coordinates of the second Amyloid monomer.
+- `Monomer::Tuple{Float64, Float64, Float64}`: The coordinates of the first AggregateProne monomer.
+- `Desired_Location::Tuple{Float64, Float64, Float64}`: The coordinates of the second AggregateProne monomer.
 
 # Global variables modified
 - `Locations_and_States_Dict`
@@ -2688,7 +2688,7 @@ Handles the aggregation of two Amyloid monomers into an Oligomer.
 - `Initialize_New_Center_of_Mass`
 """
 
-function Amyloid_Amyloid_Lock(Monomer, Desired_Location)
+function AggregateProne_AggregateProne_Lock(Monomer, Desired_Location)
     # Generate a unique code for locking
     Unique_Code = Unique_Number_Generator!(available_numbers)
 
@@ -2804,12 +2804,12 @@ function Retrieve_Unique_Number_Monomer(Monomer)
 end
 
 """
-Amyloid_Aggregation(Monomer, Desired_Location, Status_Desired_Location)
+AggregateProne_Aggregation(Monomer, Desired_Location, Status_Desired_Location)
 
-Handles the aggregation of an Amyloid monomer with another monomer or aggregate.
+Handles the aggregation of an AggregateProne monomer with another monomer or aggregate.
 
 # Arguments
-- `Monomer::Tuple{Float64, Float64, Float64}`: The coordinates of the Amyloid monomer.
+- `Monomer::Tuple{Float64, Float64, Float64}`: The coordinates of the AggregateProne monomer.
 - `Desired_Location::Tuple{Float64, Float64, Float64}`: The coordinates of the other monomer or aggregate.
 - `Status_Desired_Location::String`: The state of the other monomer or aggregate.
 
@@ -2819,28 +2819,28 @@ Handles the aggregation of an Amyloid monomer with another monomer or aggregate.
 
 # Calls
 - `Random_Dice` (twice)
-- `Amyloid_Amyloid_Lock`
-- `Amyloid_Oligomer_Lock_Two`
+- `AggregateProne_AggregateProne_Lock`
+- `AggregateProne_Oligomer_Lock_Two`
 """
 
-function Amyloid_Aggregation(Monomer, Desired_Location, Status_Desired_Location)
-    # Check if the status of the desired location is "Amyloid" and if conditions meet for forming an oligomer
-    if Status_Desired_Location == "Amyloid" && Random_Dice() < Oligomer_Formation && Monomer != Desired_Location #If you are next to a 2
-        # Perform Amyloid-Amyloid locking
-        Amyloid_Amyloid_Lock(Monomer, Desired_Location)
+function AggregateProne_Aggregation(Monomer, Desired_Location, Status_Desired_Location)
+    # Check if the status of the desired location is "AggregateProne" and if conditions meet for forming an oligomer
+    if Status_Desired_Location == "AggregateProne" && Random_Dice() < Oligomer_Formation && Monomer != Desired_Location #If you are next to a 2
+        # Perform AggregateProne-AggregateProne locking
+        AggregateProne_AggregateProne_Lock(Monomer, Desired_Location)
     elseif Status_Desired_Location == "Oligomer" && Random_Dice() < Fibril_Formation #If you are next to a 3
-        # Perform Amyloid-Oligomer locking
-        Amyloid_Oligomer_Lock_Two(Monomer, Desired_Location)
+        # Perform AggregateProne-Oligomer locking
+        AggregateProne_Oligomer_Lock_Two(Monomer, Desired_Location)
     end
 end
 
 """
-Amyloid_Oligomer_Lock_Two(Monomer_Amyloid, Desired_Location_Oligomer)
+AggregateProne_Oligomer_Lock_Two(Monomer_AggregateProne, Desired_Location_Oligomer)
 
-Handles the aggregation of an Amyloid monomer with an Oligomer to form a Fibril.
+Handles the aggregation of an AggregateProne monomer with an Oligomer to form a Fibril.
 
 # Arguments
-- `Monomer_Amyloid::Tuple{Float64, Float64, Float64}`: The coordinates of the Amyloid monomer.
+- `Monomer_AggregateProne::Tuple{Float64, Float64, Float64}`: The coordinates of the AggregateProne monomer.
 - `Desired_Location_Oligomer::Tuple{Float64, Float64, Float64}`: The coordinates of the Oligomer.
 
 # Global variables modified
@@ -2857,10 +2857,10 @@ Handles the aggregation of an Amyloid monomer with an Oligomer to form a Fibril.
 - `Initialize_New_Center_of_Mass`
 """
 
-function Amyloid_Oligomer_Lock_Two(Monomer_Amyloid, Desired_Location_Oligomer)
-    # Retrieve the unique code associated with the amyloid and oligomer
+function AggregateProne_Oligomer_Lock_Two(Monomer_AggregateProne, Desired_Location_Oligomer)
+    # Retrieve the unique code associated with the AggregateProne and oligomer
     Unique_Code_Oligomer = Retrieve_Unique_Number_Monomer(Desired_Location_Oligomer)
-    Unique_Code_Amyloid = Retrieve_Unique_Number_Monomer(Monomer_Amyloid)
+    Unique_Code_AggregateProne = Retrieve_Unique_Number_Monomer(Monomer_AggregateProne)
 
     Key_Array = Filter_Oligomer()
 
@@ -2878,12 +2878,12 @@ function Amyloid_Oligomer_Lock_Two(Monomer_Amyloid, Desired_Location_Oligomer)
         end
     end
 
-    # Update the state of the amyloid monomer to 4 (Fibril) with the same unique code
-    Update_Locations_States(Monomer_Amyloid, 4, Unique_Code_Oligomer)
+    # Update the state of the AggregateProne monomer to 4 (Fibril) with the same unique code
+    Update_Locations_States(Monomer_AggregateProne, 4, Unique_Code_Oligomer)
 
-    #Delete the info of oligomer and amyloid from Initial_Locations_and_States_Dict
+    #Delete the info of oligomer and AggregateProne from Initial_Locations_and_States_Dict
     Remove_Center_of_Mass_Info(Unique_Code_Oligomer)
-    Remove_Center_of_Mass_Info(Unique_Code_Amyloid)
+    Remove_Center_of_Mass_Info(Unique_Code_AggregateProne)
 
     #Calculate the new center of mass for the new fibril
     X, Y, Z = Calculate_Center_of_Mass_Fibril(Unique_Code_Oligomer)
@@ -2949,7 +2949,7 @@ Handles the aggregation or dissociation of an Oligomer.
 # Calls
 - `Retrieve_State_Monomer` (twice)
 - `Random_Dice` (twice)
-- `Amyloid_Oligomer_Lock`
+- `AggregateProne_Oligomer_Lock`
 - `Retrieve_Unique_Number_Monomer`
 - `Oligomer_Dissociation`
 """
@@ -2963,7 +2963,7 @@ function Oligomer_Aggregate(Monomer, Desired_Location)
 
     # Check for the conditions for aggregation or dissociation
     if State_Desired_Location == 2 && Random_Dice() < Fibril_Formation
-        Amyloid_Oligomer_Lock(Monomer, Desired_Location)
+        AggregateProne_Oligomer_Lock(Monomer, Desired_Location)
     elseif Random_Dice() < Oligomer_Dissociation_rate && State_Monomer == 3
         Unique_Number_Oligomer = Retrieve_Unique_Number_Monomer(Monomer)
         Oligomer_Dissociation(Unique_Number_Oligomer)
@@ -2974,7 +2974,7 @@ end
 """
 Oligomer_Dissociation(Unique_Number_Oligomer)
 
-Handles the dissociation of an Oligomer into Amyloid monomers.
+Handles the dissociation of an Oligomer into AggregateProne monomers.
 
 # Arguments
 - `Unique_Number_Oligomer::Int64`: The unique number of the Oligomer.
@@ -3051,13 +3051,13 @@ function Restore_Dissociated_Monomers(Monomer, Unique_Number)
 end
 
 """
-Amyloid_Oligomer_Lock(Monomer_Oligomer, Desired_Location_Amyloid)
+AggregateProne_Oligomer_Lock(Monomer_Oligomer, Desired_Location_AggregateProne)
 
-Handles the aggregation of an Oligomer with an Amyloid monomer to form a Fibril.
+Handles the aggregation of an Oligomer with an AggregateProne monomer to form a Fibril.
 
 # Arguments
 - `Monomer_Oligomer::Tuple{Float64, Float64, Float64}`: The coordinates of the Oligomer.
-- `Desired_Location_Amyloid::Tuple{Float64, Float64, Float64}`: The coordinates of the Amyloid monomer.
+- `Desired_Location_AggregateProne::Tuple{Float64, Float64, Float64}`: The coordinates of the AggregateProne monomer.
 
 # Global variables modified
 - `Locations_and_States_Dict`
@@ -3072,12 +3072,12 @@ Handles the aggregation of an Oligomer with an Amyloid monomer to form a Fibril.
 - `Initialize_New_Center_of_Mass`
 """
 
-function Amyloid_Oligomer_Lock(Monomer_Oligomer, Desired_Location_Amyloid)
+function AggregateProne_Oligomer_Lock(Monomer_Oligomer, Desired_Location_AggregateProne)
     # Retrieve the unique number associated with the oligomer 
     Unique_Code_Oligomer = Retrieve_Unique_Number_Monomer(Monomer_Oligomer)
 
-    # Retrieve the unique number associated with the amyloid 
-    Unique_Code_Amyloid = Retrieve_Unique_Number_Monomer(Desired_Location_Amyloid)
+    # Retrieve the unique number associated with the AggregateProne 
+    Unique_Code_AggregateProne = Retrieve_Unique_Number_Monomer(Desired_Location_AggregateProne)
 
     # Iterate through all coordinates in the dictionary
     #Key_Array = Key_Array_Locations_and_States()
@@ -3094,12 +3094,12 @@ function Amyloid_Oligomer_Lock(Monomer_Oligomer, Desired_Location_Amyloid)
         end
     end
 
-    # Update the state of the desired location (Amyloid) to 4 (Fibril) and set its unique code to the oligomer's unique code
-    Update_Locations_States(Desired_Location_Amyloid, 4, Unique_Code_Oligomer)
+    # Update the state of the desired location (AggregateProne) to 4 (Fibril) and set its unique code to the oligomer's unique code
+    Update_Locations_States(Desired_Location_AggregateProne, 4, Unique_Code_Oligomer)
 
-    #Remove Info of Oligomer and Amyloid from Initial_Locations_and_States_Dict
+    #Remove Info of Oligomer and AggregateProne from Initial_Locations_and_States_Dict
     Remove_Center_of_Mass_Info(Unique_Code_Oligomer)
-    Remove_Center_of_Mass_Info(Unique_Code_Amyloid)
+    Remove_Center_of_Mass_Info(Unique_Code_AggregateProne)
 
     #Calculate new center of mass for new fibril 
     X, Y, Z = Calculate_Center_of_Mass_Fibril(Unique_Code_Oligomer)
@@ -3196,7 +3196,7 @@ end
 """
 Fibril_Aggregate(Monomer, Desired_Location)
 
-Handles the aggregation of a Fibril with an Amyloid monomer.
+Handles the aggregation of a Fibril with an AggregateProne monomer.
 
 # Arguments
 - `Monomer::Tuple{Float64, Float64, Float64}`: The coordinates of the Fibril.
@@ -3216,7 +3216,7 @@ function Fibril_Aggregate(Monomer, Desired_Location)
  # Retrieve the state of the desired location directly from the dictionary
  State_Desired_Location = Retrieve_State_Monomer(Desired_Location)
 
- # Check if the desired location is "Amyloid" and a random chance allows fibril growth
+ # Check if the desired location is "AggregateProne" and a random chance allows fibril growth
  if State_Desired_Location == 2 && Random_Dice() < Fibril_Growth
      Fibril_Lock(Monomer, Desired_Location)
  end
@@ -3224,13 +3224,13 @@ function Fibril_Aggregate(Monomer, Desired_Location)
 end
 
 """
-Fibril_Lock(Fibril, Desired_Location_Amyloid)
+Fibril_Lock(Fibril, Desired_Location_AggregateProne)
 
-Handles the locking of a Fibril with an Amyloid monomer.
+Handles the locking of a Fibril with an AggregateProne monomer.
 
 # Arguments
 - `Fibril::Tuple{Float64, Float64, Float64}`: The coordinates of the Fibril.
-- `Desired_Location_Amyloid::Tuple{Float64, Float64, Float64}`: The coordinates of the Amyloid monomer.
+- `Desired_Location_AggregateProne::Tuple{Float64, Float64, Float64}`: The coordinates of the AggregateProne monomer.
 
 # Global variables modified
 - `Locations_and_States_Dict`
@@ -3244,17 +3244,17 @@ Handles the locking of a Fibril with an Amyloid monomer.
 - `Initialize_New_Center_of_Mass`
 """
 
-function Fibril_Lock(Fibril, Desired_Location_Amyloid)
+function Fibril_Lock(Fibril, Desired_Location_AggregateProne)
     # Retrieve the unique number associated with the fibril directly from the dictionary
     Unique_Code_Fibril = Retrieve_Unique_Number_Monomer(Fibril)
-    Unique_Code_Amyloid = Retrieve_Unique_Number_Monomer(Desired_Location_Amyloid)
+    Unique_Code_AggregateProne = Retrieve_Unique_Number_Monomer(Desired_Location_AggregateProne)
 
-    # Update the state of the desired location (Amyloid) to 4 (Fibril) and set its unique code
-    Update_Locations_States(Desired_Location_Amyloid, 4, Unique_Code_Fibril)
+    # Update the state of the desired location (AggregateProne) to 4 (Fibril) and set its unique code
+    Update_Locations_States(Desired_Location_AggregateProne, 4, Unique_Code_Fibril)
     
     #Remove Info from Initial_Locations_and_States_Dict
     Remove_Center_of_Mass_Info(Unique_Code_Fibril)
-    Remove_Center_of_Mass_Info(Unique_Code_Amyloid)
+    Remove_Center_of_Mass_Info(Unique_Code_AggregateProne)
 
     #Calculate new center of mass with bigger fibril 
     X, Y, Z = Calculate_Center_of_Mass_Fibril(Unique_Code_Fibril)
@@ -3472,18 +3472,18 @@ function Filter_Native()
 end
 
 """
-Filter_Amyloid()
+Filter_AggregateProne()
 
-Filters the Locations_and_States_Dict to return an array of coordinates of Amyloid-prone monomers (state == 2).
+Filters the Locations_and_States_Dict to return an array of coordinates of AggregateProne-prone monomers (state == 2).
 
 # Global variables read
 - `Locations_and_States_Dict`
 
 # Returns
-- `Vector{Tuple{Float64, Float64, Float64}}`: An array of coordinates of Amyloid-prone monomers.
+- `Vector{Tuple{Float64, Float64, Float64}}`: An array of coordinates of AggregateProne-prone monomers.
 """
 
-function Filter_Amyloid()
+function Filter_AggregateProne()
     return [k for (k, (state, _)) in Locations_and_States_Dict if state == 2]
 end
 

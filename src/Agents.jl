@@ -39,7 +39,7 @@ License: http://www.apache.org/licenses/LICENSE-2.0
 
 # State values for agents
 const NativeState_Value         = 1  # Native monomer
-const AmyloidProne_Value        = 2  # Amyloid-prone monomer
+const AggregateProne_Value        = 2  # Amyloid-prone monomer
 const OligomerState_Value       = 3  # Oligomer
 const FibrilState_Value         = 4  # Fibril
 const SphereState_Value         = 5  # Crowder/Sphere
@@ -112,7 +112,7 @@ function load_csv_parameters(file_path::String)
         for row in eachrow(df)
     )
 
-    for key in ["Lattice_Size", "Max_NumberMonomers_Native", "Max_NumberMonomers_Amyloid", "Obstacle_Radius", "MAX_NumberMovements"]
+    for key in ["Lattice_Size", "Max_NumberMonomers_Native", "Max_NumberMonomers_AggregateProne", "Obstacle_Radius", "MAX_NumberMovements"]
         if haskey(params, key)
             params[key] = Int(params[key])
         end
@@ -131,7 +131,7 @@ Parameters = load_csv_parameters(file_path)
 # Assign simulation parameters
 Lattice_Size = Parameters["Lattice_Size"]                                 # Size of the cubic lattice (Lattice_Size x Lattice_Size x Lattice_Size)
 Max_NumberMonomers_Native = Parameters["Max_NumberMonomers_Native"]       # Maximum number of native monomers
-Max_NumberMonomers_Amyloid = Parameters["Max_NumberMonomers_Amyloid"]     # Maximum number of amyloid-prone monomers
+Max_NumberMonomers_AggregateProne = Parameters["Max_NumberMonomers_AggregateProne"]     # Maximum number of amyloid-prone monomers
 Obstacle_Radius = Parameters["Obstacle_Radius"]                           # Radius of spherical crowders
 Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"] # Crowder concentration
 Obstacle = Parameters["Spheres?"]                                         # Boolean: Enable/Disable crowders
@@ -204,7 +204,7 @@ function Copy_Original_Location()
     global Initial_Locations_and_States_Dict
 
     for (location, (state, unique_number)) in Locations_and_States_Dict
-        if state == NativeState_Value || state == AmyloidProne_Value
+        if state == NativeState_Value || state == AggregateProne_Value
             Initial_Locations_and_States_Dict[location] = (state, unique_number)
         end
     end
@@ -421,7 +421,7 @@ end
 
 Randomly assigns the Amyloid-prone monomer state (2) to unoccupied lattice sites.
 
-The number of monomers assigned is controlled by `Max_NumberMonomers_Amyloid`.
+The number of monomers assigned is controlled by `Max_NumberMonomers_AggregateProne`.
 
 # Global variables modified
 - `Locations_and_States_Dict`
@@ -432,7 +432,7 @@ function Randomly_Assigns_Location_Monomers_Amyloid()
     Monomers_Made_Amyloid = 0
     keys_list = collect(keys(Locations_and_States_Dict))
 
-    while Monomers_Made_Amyloid < Max_NumberMonomers_Amyloid
+    while Monomers_Made_Amyloid < Max_NumberMonomers_AggregateProne
         Random_Index = rand(1:length(keys_list))
         Random_Location = keys_list[Random_Index]
         State, _ = Locations_and_States_Dict[Random_Location]
@@ -472,7 +472,7 @@ Assigns the Amyloid-prone monomer state (2) and a random unique ID to a given co
 function Assigns_State_Monomer_Amyloid(Location)
     global Locations_and_States_Dict
     Unique_Number = Randomly_Choosing_Unique_Number_Monomer()
-    Locations_and_States_Dict[Location] = (AmyloidProne_Value, Unique_Number)
+    Locations_and_States_Dict[Location] = (AggregateProne_Value, Unique_Number)
 end
 
 """

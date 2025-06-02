@@ -8,7 +8,7 @@ using Dates
     run_plot_all_monomer_states(directory::String, Total_Timesteps::Int)
 
 Generates a combined line plot showing the average count of each monomer state 
-(Native, Amyloid, Oligomer, Aggregate) across all simulations over time. This 
+(Native, AggregateProne, Oligomer, Aggregate) across all simulations over time. This 
 function is part of the FAIR post-analysis pipeline and uses pre-aggregated 
 CSV data stored in the `Compare_Simulations` folder.
 
@@ -18,7 +18,7 @@ CSV data stored in the `Compare_Simulations` folder.
 
 # Behavior
 - Reads four input CSVs: 
-  - `Appending_Amyloid_Count.csv`
+  - `Appending_AggregateProne_Count.csv`
   - `Appending_Native_Count.csv`
   - `Appending_Oligomer_Count.csv`
   - `Appending_Aggregate_Count.csv`
@@ -59,14 +59,14 @@ function run_plot_all_monomer_states(directory::String, Total_Timesteps::Int)
     end
 
     # Construct full paths to input files
-    amyloid_file = joinpath(directory, "Compare_Simulations", "Appending_Amyloid_Count.csv")
+    AggregateProne_file = joinpath(directory, "Compare_Simulations", "Appending_AggregateProne_Count.csv")
     native_file = joinpath(directory, "Compare_Simulations", "Appending_Native_Count.csv")
     oligomer_file = joinpath(directory, "Compare_Simulations", "Appending_Oligomer_Count.csv")
     aggregate_file = joinpath(directory, "Compare_Simulations", "Appending_Aggregate_Count.csv")
 
     # Process all monomer state files
-    println("Processing Amyloid data...")
-    Amyloid_Mean = process_data(amyloid_file)
+    println("Processing AggregateProne data...")
+    AggregateProne_Mean = process_data(AggregateProne_file)
 
     println("Processing Native data...")
     Native_Mean = process_data(native_file)
@@ -81,7 +81,7 @@ function run_plot_all_monomer_states(directory::String, Total_Timesteps::Int)
     Timesteps = 0:Total_Timesteps
 
     # Create the plot
-    plot(Timesteps, Amyloid_Mean, label="Amyloid", linewidth=2, linecolor=:orange)
+    plot(Timesteps, AggregateProne_Mean, label="AggregateProne", linewidth=2, linecolor=:orange)
     plot!(Timesteps, Native_Mean, label="Native", linewidth=2, linecolor=:green)
     plot!(Timesteps, Oligomer_Mean, label="Oligomer", linewidth=2, linecolor=:red)
     plot!(Timesteps, Aggregate_Mean, label="Aggregate", linewidth=2, linecolor=:blue)

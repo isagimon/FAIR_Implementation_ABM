@@ -48,15 +48,15 @@ Simulation results will be saved to a timestamped folder inside `Data_Collection
 The parameters below can be configured directly at the top of the `Main_Simulation.jl` file:
 
 - `MAX_NumberMovements`: Maximum number of simulation timesteps.
-- `Native_to_Amyloid`: Probability of native to amyloid transition.
-- `Amyloid_to_Native`: Probability of amyloid to native transition.
+- `Native_to_AggregateProne`: Probability of native to AggregateProne transition.
+- `AggregateProne_to_Native`: Probability of AggregateProne to native transition.
 - `Oligomer_Formation`: Probability of oligomer formation.
 - `Oligomer_Dissociation_rate`: Probability of oligomer dissociation.
 - `Fibril_Formation`: Probability of fibril formation.
 - `Fibril_Growth`: Probability of fibril growth.
 - `Lattice_Size`: Size of the cubic lattice.
 - `Max_NumberMonomers_Native`: Initial number of native monomers.
-- `Max_NumberMonomers_Amyloid`: Initial number of amyloid-prone monomers.
+- `Max_NumberMonomers_AggregateProne`: Initial number of AggregateProne-prone monomers.
 - `Obstacle_Radius`: Radius of spherical crowders (if used).
 - `Crowder_Concentration_Spheres`: Concentration of crowders (optional).
 - `Obstacle`: Boolean to enable or disable crowders.
@@ -71,7 +71,7 @@ The parameters below can be configured directly at the top of the `Main_Simulati
 The simulation generates the following outputs:
 
 - `Oligomer_and_Aggregate_Count_Results.csv`: Tracks oligomer and aggregate counts over time.
-- `Native_and_Amyloid_Count_Results.csv`: Counts of native vs. amyloid monomers.
+- `Native_and_AggregateProne_Count_Results.csv`: Counts of native vs. AggregateProne monomers.
 - `MSD_Data.csv`: Mean squared displacement data for monomer diffusion.
 - `Fibril_Length_Count_Results.csv`: Tracks fibril length distributions.
 - `TimestepXXX.csv`: Snapshots of lattice states at specified timesteps.
@@ -89,12 +89,12 @@ Here’s what the columns represent in key `.csv` files:
 | Oligomers  | Count of state 3 monomers (oligomers) |
 | Aggregates | Count of state 4 monomers (aggregates/fibrils) |
 
-### `Native_and_Amyloid_Count_Results.csv`
+### `Native_and_AggregateProne_Count_Results.csv`
 | Column     | Description                    |
 |------------|--------------------------------|
 | Timestep   | Simulation timepoint           |
 | Native     | Number of native monomers (N)  |
-| Amyloid    | Number of amyloid monomers (A) |
+| AggregateProne  | Number of AggregateProne monomers (A) |
 
 ### `MSD_Data.csv`
 | Column       | Description                                      |

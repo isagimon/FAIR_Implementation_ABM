@@ -5,13 +5,13 @@ using FilePaths
 using CSV
 
 """
-Module: Append_Native_Amyloid_Counts.jl
+Module: Append_Native_AggregateProne_Counts.jl
 
-Processes and aggregates native and amyloid-prone monomer count data from multiple simulation folders, 
+Processes and aggregates native and AggregateProne-prone monomer count data from multiple simulation folders, 
 compiling results into centralized summary CSV files for cross-simulation comparison.
 
-This script automates the extraction of relevant time-series data from `Native_and_Amyloid_Count_Results.csv` 
-files generated during simulations. It isolates the columns corresponding to native and amyloid-prone monomers 
+This script automates the extraction of relevant time-series data from `Native_and_AggregateProne_Count_Results.csv` 
+files generated during simulations. It isolates the columns corresponding to native and AggregateProne-prone monomers 
 and appends them into collective CSVs housed in the `Compare_Simulations` subdirectory.
 
 Implements FAIR principles:
@@ -23,9 +23,9 @@ Implements FAIR principles:
 
 Key Features:
 - Dynamically scans all simulation folders with names starting in "Simulation".
-- Initializes and appends to `Appending_Amyloid_Count.csv` and `Appending_Native_Count.csv`.
+- Initializes and appends to `Appending_AggregateProne_Count.csv` and `Appending_Native_Count.csv`.
 - Ensures output CSVs are synchronized with the number of simulation timesteps.
-- Useful for tracking and comparing native and amyloid monomer counts across many independent runs.
+- Useful for tracking and comparing native and AggregateProne monomer counts across many independent runs.
 
 Authors: Santiago Schnell, Conner Sandefur, Isabella Gimon  
 Dependencies:
@@ -39,9 +39,9 @@ License: http://www.apache.org/licenses/LICENSE-2.0
 """
 
 """
-    run_append_amyloid_and_native(directory::String, Number_Timesteps::Int)
+    run_append_AggregateProne_and_native(directory::String, Number_Timesteps::Int)
 
-Main function that processes simulation results for amyloid-prone and native monomer counts. 
+Main function that processes simulation results for AggregateProne-prone and native monomer counts. 
 
 # Arguments
 - `directory::String`: Path to the top-level directory containing simulation folders.
@@ -49,24 +49,24 @@ Main function that processes simulation results for amyloid-prone and native mon
 
 # Behavior
 - Scans all folders beginning with "Simulation".
-- Extracts amyloid and native monomer counts from each simulation's result file.
+- Extracts AggregateProne and native monomer counts from each simulation's result file.
 - Appends each result as a new column into their respective summary CSVs.
 
 # Notes
-- The expected input file per simulation is `Native_and_Amyloid_Count_Results.csv`.
+- The expected input file per simulation is `Native_and_AggregateProne_Count_Results.csv`.
 """
 # Main execution function
-function run_append_amyloid_and_native(directory::String, Number_Timesteps::Int)
-    Amyloid_Count_Excel(directory, Number_Timesteps)
+function run_append_AggregateProne_and_native(directory::String, Number_Timesteps::Int)
+    AggregateProne_Count_Excel(directory, Number_Timesteps)
     Native_Count_Excel(directory, Number_Timesteps)
     All_Folders = readdir(directory, join=true)
     Simulation_Folders = filter(folder -> isdir(folder) && startswith(basename(folder), "Simulation"), All_Folders)
     
     for Folder in Simulation_Folders
         #Line_Graph_Folder = joinpath(Folder, "Line_Graphs")
-        Simulation_Results_File = joinpath(Folder, "Native_and_Amyloid_Count_Results.csv")
+        Simulation_Results_File = joinpath(Folder, "Native_and_AggregateProne_Count_Results.csv")
         println("This is Folder: $Folder")
-        Save_Amyloid_Count_Column(Simulation_Results_File, Folder)
+        Save_AggregateProne_Count_Column(Simulation_Results_File, Folder)
         #println("This is the Amorphous_Count_File: ",Amorphous_Count_File)
         Save_Native_Count_Column(Simulation_Results_File, Folder)
         #println("This is the Oligomer_Count_File: ",Oligomer_Count_File)
@@ -74,9 +74,9 @@ function run_append_amyloid_and_native(directory::String, Number_Timesteps::Int)
 end
 
 """
-    Save_Amyloid_Count_Column(Amorphous_Count_File, Full_Path)
+    Save_AggregateProne_Count_Column(Amorphous_Count_File, Full_Path)
 
-Extracts the amyloid monomer count column from a simulation result CSV file and 
+Extracts the AggregateProne monomer count column from a simulation result CSV file and 
 prepares it for aggregation by wrapping it in a standardized DataFrame.
 
 # Arguments
@@ -84,27 +84,27 @@ prepares it for aggregation by wrapping it in a standardized DataFrame.
 - `Full_Path`: Full path to the current simulation folder.
 
 # Calls
-- `Append_Amyloid_Column()` to insert the extracted column into the aggregated results.
+- `Append_AggregateProne_Column()` to insert the extracted column into the aggregated results.
 
 # Notes
-- The function assumes the amyloid count is in the third column of the result CSV.
+- The function assumes the AggregateProne count is in the third column of the result CSV.
 """
-function Save_Amyloid_Count_Column(Amorphous_Count_File, Full_Path)
+function Save_AggregateProne_Count_Column(Amorphous_Count_File, Full_Path)
     Read_File = CSV.read(Amorphous_Count_File, DataFrame)
     Aggregate_Column_Name = names(Read_File)[3]
     Aggregate_Column_Data = Read_File[!, Aggregate_Column_Name]
     Aggregate_Column_DataFrame = DataFrame(Aggregate_Column = Aggregate_Column_Data)
-    Append_Amyloid_Column(Aggregate_Column_DataFrame, Full_Path)
+    Append_AggregateProne_Column(Aggregate_Column_DataFrame, Full_Path)
 end
 
 """
-    Append_Amyloid_Column(Aggregate_Column, Full_Path)
+    Append_AggregateProne_Column(Aggregate_Column, Full_Path)
 
-Appends amyloid monomer count data for a single simulation to the aggregated 
-summary CSV file `Appending_Amyloid_Count.csv`.
+Appends AggregateProne monomer count data for a single simulation to the aggregated 
+summary CSV file `Appending_AggregateProne_Count.csv`.
 
 # Arguments
-- `Aggregate_Column`: A DataFrame containing a single column of amyloid counts.
+- `Aggregate_Column`: A DataFrame containing a single column of AggregateProne counts.
 - `Full_Path`: Path to the simulation folder, used to extract the simulation name.
 
 # Global variables used
@@ -114,10 +114,10 @@ summary CSV file `Appending_Amyloid_Count.csv`.
 - If the output CSV already contains a column for the simulation, it will be overwritten.
 """
 
-function Append_Amyloid_Column(Aggregate_Column, Full_Path)
+function Append_AggregateProne_Column(Aggregate_Column, Full_Path)
     Simulation_Name = Retrieve_Simulation_Name(Full_Path)
     println("This is Simulation_Name: $Simulation_Name")
-    Amorphous_CSV_File = Location_Amyloid_CSV_File(directory)
+    Amorphous_CSV_File = Location_AggregateProne_CSV_File(directory)
     Read_Amorphous_CSV_File = CSV.read(Amorphous_CSV_File, DataFrame)
     rename!(Aggregate_Column, names(Aggregate_Column)[1] => Simulation_Name)
     Read_Amorphous_CSV_File[!, Simulation_Name] = Aggregate_Column[:, Simulation_Name]
@@ -158,7 +158,7 @@ Extracts the native monomer column from a simulation result CSV file and passes 
 to be appended to the native monomer master CSV.
 
 # Arguments
-- `Oligomer_Count_File`: Path to CSV with native and amyloid monomer counts.
+- `Oligomer_Count_File`: Path to CSV with native and AggregateProne monomer counts.
 - `Full_Path`: Path to simulation folder used for naming.
 
 # Calls
@@ -177,9 +177,9 @@ function Save_Native_Count_Column(Oligomer_Count_File, Full_Path) #NATIVE COUNT
 end
 
 """
-    Amyloid_Count_Excel(directory, Number_Timesteps)
+    AggregateProne_Count_Excel(directory, Number_Timesteps)
 
-Creates `Appending_Amyloid_Count.csv` if it does not already exist.
+Creates `Appending_AggregateProne_Count.csv` if it does not already exist.
 
 # Arguments
 - `directory`: Path to the root simulation directory.
@@ -193,10 +193,10 @@ Creates `Appending_Amyloid_Count.csv` if it does not already exist.
 - The CSV is initialized with a `Timesteps` column from 0 to `Number_Timesteps`.
 """
 
-function Amyloid_Count_Excel(directory, Number_Timesteps) #AMYLOID
+function AggregateProne_Count_Excel(directory, Number_Timesteps) #AggregateProne
     if Checks_Amorphous_Excel_Present(directory) == false
         Compare_Simulation_Directory = directory * "/Compare_Simulations"
-        File_Name = "Appending_Amyloid_Count.csv"
+        File_Name = "Appending_AggregateProne_Count.csv"
         Complete_File_Path = joinpath(Compare_Simulation_Directory, File_Name)
         Timesteps = Append_Number_Timesteps(Number_Timesteps)
         CSV.write(Complete_File_Path, Timesteps)
@@ -207,7 +207,7 @@ end
 """
     Checks_Amorphous_Excel_Present(directory) -> Bool
 
-Checks whether `Appending_Amyloid_Count.csv` exists in `Compare_Simulations/`.
+Checks whether `Appending_AggregateProne_Count.csv` exists in `Compare_Simulations/`.
 
 # Arguments
 - `directory`: Root path to simulation data.
@@ -219,9 +219,9 @@ Checks whether `Appending_Amyloid_Count.csv` exists in `Compare_Simulations/`.
 - Prints a message if the file is not found.
 """
 
-function Checks_Amorphous_Excel_Present(directory) #AMYLOID
+function Checks_Amorphous_Excel_Present(directory) #AggregateProne
     Compare_Simulation_Directory = directory * "/Compare_Simulations"
-    CSV_File = "Appending_Amyloid_Count.csv"
+    CSV_File = "Appending_AggregateProne_Count.csv"
     File_Path = joinpath(Compare_Simulation_Directory, CSV_File)
     if !isfile(File_Path)
         println("File is not found: $Compare_Simulation_Directory")
@@ -302,17 +302,17 @@ function Append_Number_Timesteps(Number_Timesteps)
 end
 
 """
-    Location_Amyloid_CSV_File(directory) -> String
+    Location_AggregateProne_CSV_File(directory) -> String
 
-Returns the full path to `Appending_Amyloid_Count.csv` within the `Compare_Simulations/` folder.
+Returns the full path to `Appending_AggregateProne_Count.csv` within the `Compare_Simulations/` folder.
 
 # Arguments
 - `directory`: Root directory where simulation results are stored.
 """
 
 
-function Location_Amyloid_CSV_File(directory) 
-    return joinpath(directory, "Compare_Simulations", "Appending_Amyloid_Count.csv")
+function Location_AggregateProne_CSV_File(directory) 
+    return joinpath(directory, "Compare_Simulations", "Appending_AggregateProne_Count.csv")
 end
 
 """
