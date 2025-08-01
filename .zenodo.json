@@ -15,7 +15,7 @@
       }
     ],
     "description": "This repository provides a FAIR-compliant agent-based model (ABM) to simulate protein aggregation under macromolecular crowding. It includes code, documentation, and instructions for running experiments and analyzing aggregation behavior across multiple mechanistic variations.",
-    "license": "MIT",
+    "license": "Apache-2.0",
     "keywords": [
       "FAIR",
       "agent-based modeling",
