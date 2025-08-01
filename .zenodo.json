@@ -1,0 +1,35 @@
+{
+    "title": "FAIR Implementation of an Agent-Based Model for Protein Aggregation",
+    "creators": [
+      {
+        "name": "Gimon, Isabella",
+        "affiliation": "University of Notre Dame",
+        "orcid": "0000-0000-0000-0000"
+      },
+      {
+        "name": "Schnell, Santiago",
+        "affiliation": "Dartmouth College"
+      },
+      {
+        "name": "Sandefur, Conner"
+      }
+    ],
+    "description": "This repository provides a FAIR-compliant agent-based model (ABM) to simulate protein aggregation under macromolecular crowding. It includes code, documentation, and instructions for running experiments and analyzing aggregation behavior across multiple mechanistic variations.",
+    "license": "MIT",
+    "keywords": [
+      "FAIR",
+      "agent-based modeling",
+      "protein aggregation",
+      "macromolecular crowding",
+      "reproducibility"
+    ],
+    "related_identifiers": [
+      {
+        "relation": "isSupplementTo",
+        "identifier": "10.1016/j.csbj.2024.05.013",  // example DOI
+        "scheme": "doi"
+      }
+    ],
+    "version": "1.0.0"
+  }
+  
