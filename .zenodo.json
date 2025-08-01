@@ -4,7 +4,7 @@
       {
         "name": "Gimon, Isabella",
         "affiliation": "University of Notre Dame",
-        "orcid": "0000-0000-0000-0000"
+        "orcid": " 0009-0008-9072-9511"
       },
       {
         "name": "Schnell, Santiago",
@@ -22,13 +22,6 @@
       "protein aggregation",
       "macromolecular crowding",
       "reproducibility"
-    ],
-    "related_identifiers": [
-      {
-        "relation": "isSupplementTo",
-        "identifier": "10.1016/j.csbj.2024.05.013",  // example DOI
-        "scheme": "doi"
-      }
     ],
     "version": "1.0.0"
   }
