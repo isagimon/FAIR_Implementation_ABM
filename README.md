@@ -76,6 +76,11 @@ For citation details, see the [`CITATION.cff`](CITATION.cff) file.
 
 ---
 
+## 📖 Usage Instructions
+
+For detailed instructions on how to run and use this model, see the [USAGE.md](USAGE.md) file.
+
+
 ## 📬 Contact
 
 If you have questions or would like to collaborate, please open an issue or contact the maintainer:  
