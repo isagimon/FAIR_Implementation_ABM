@@ -29,29 +29,33 @@ println("Directory: ", directory)
 println("Number of Timesteps: ", Number_Timesteps)
 println("Total Number of Monomers: ", Total_Number_Monomers)
 
+
+
 # ------------------------------------------------------------------------
-# Load analysis scripts that define and implement the core analysis logic
+# Load and run analysis scripts that define and implement the core analysis logic
 # ------------------------------------------------------------------------
 
 # Load the script that extracts native and amyloid monomer counts
 include("$basic_directory/Analysis/Append_AggregateProne_and_Native.jl")
-
-# Load the script that extracts aggregate and oligomer counts
-include("$basic_directory/Analysis/Append_Aggregate_and_Oligomer.jl")
-
-# Load the script that plots average monomer state counts over time
-include("$basic_directory/Analysis/Average_All_Monomers_vs_Timesteps.jl")
-
-# ------------------------------------------------------------------------
-# Run all analysis functions sequentially
-# ------------------------------------------------------------------------
-
 # Append native and amyloid monomer count data across all simulations
 run_append_AggregateProne_and_native(directory, Number_Timesteps)
 
+# Load the script that extracts aggregate and oligomer counts
+include("$basic_directory/Analysis/Append_Aggregate_and_Oligomer.jl")
 # Append aggregate and oligomer count data into combined CSVs
 run_process_aggregate_excel_sheets(directory, Number_Timesteps)
 
+# Load the script that plots average monomer state counts over time
+include("$basic_directory/Analysis/Average_All_Monomers_vs_Timesteps.jl")
 # Generate and save a line plot of average monomer state counts over time
 run_plot_all_monomer_states(directory, Number_Timesteps)
 
+# Load the script that extracts monomers cleared
+include("$basic_directory/Analysis/Append_Oligomer_Clearance_Data.jl")
+#Append cleared oligomers into a combined CSV file
+Extract_Oligomers_Cleared_Count_Excel_Sheets(directory, Number_Timesteps)
+
+# Load the script that plots average monomer cleared over time
+include("$basic_directory/Analysis/Average_Oligomers_Cleared_vs_Timesteps.jl")
+#Generate and save a line plot of cleared monomers over time
+Import_Data(directory, Number_Timesteps)

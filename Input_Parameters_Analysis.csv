@@ -1,4 +1,4 @@
 ﻿Input_Parameters,Values,Instructions
 Directory,/Users/isabellagimon/Desktop/FAIR_Implementation_ABM/Data_Collection,Directory where simulation folders are found
-Total_Timesteps,100,The total number of timesteps in each simulation folder
-Total_Number_Monomers,10,The total number of native and amyloid monomers 
+Total_Timesteps,200,The total number of timesteps in each simulation folder
+Total_Number_Monomers,30,The total number of native and amyloid monomers 

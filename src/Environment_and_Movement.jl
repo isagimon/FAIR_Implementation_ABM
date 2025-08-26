@@ -42,6 +42,7 @@ const Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rat
 const Fibril_Formation          = Float64(Parameters["Fibril_Formation"])            # Probability of fibril formation, P(AggregateProne + Oligomer → Fibril)
 const Fibril_Growth             = Float64(Parameters["Fibril_Growth"])               # Probability of fibril growth, P(Fibril + AggregateProne → Grow)
 const Directory                 = String(Parameters["Directory"])
+const Probability_of_Oligomer_Removal = Float64(Parameters["Probability_of_Oligomer_Removal"])
 
 # Derived parameter
 global max_fibril_size = Max_NumberMonomers_AggregateProne + Max_NumberMonomers_Native
@@ -53,6 +54,7 @@ global max_fibril_size = Max_NumberMonomers_AggregateProne + Max_NumberMonomers_
 global timesteps = 0            # Current timestep counter
 global CurrentTimeStep = 0      # Counter for exporting timestep information
 global Fibril_Length_Count      # DataFrame to store fibril length counts
+const Total_Cleared_Monomers = Ref(0) #Variable keeps track of monomers cleared
 
 # Movement directions
 const Possible_Movement_Options = [
@@ -72,6 +74,7 @@ global available_numbers = collect(1:200000)    # Array of available unique numb
 results_df       = DataFrame(Timestep = Int[], Oligomers = Int[], Aggregates = Int[])                # DataFrame to store simulation results
 results_df_two   = DataFrame(Timestep = Int[], Native = Int[], AggregateProne = Int[])                      # DataFrame to store native and aggregateProne counts
 msd_data         = DataFrame(Timestep = Int[], MSD_Monomer = Float64[], MSD_Aggregate = Float64[])   # DataFrame to store MSD data
+Number_Monomers_Cleared = DataFrame(Timestep = Int[], Number_Monomers_Cleared = Int[]) #DataFrame to store cleared monomers 
 
 ##########################
 # THREAD SAFETY
@@ -252,13 +255,16 @@ Initializes DataFrames to store simulation results.
 # Global variables modified
 - `results_df_two`
 - `results_df`
+- 'Number_Monomers_Cleared'
 """
 
 function Intial_Conditions()
     global results_df_two
     global results_df
+    global Number_Monomers_Cleared
     push!(results_df_two, (0,Max_NumberMonomers_Native, Max_NumberMonomers_AggregateProne ))
     push!(results_df, (0, 0, 0))
+    push!(Number_Monomers_Cleared, (0, 0))
 end
 
 """
@@ -282,6 +288,21 @@ function Save_MSD_Data(timesteps)
     msd_calculated_monomers = compute_MSD() #This only meant for native or AggregateProne monomers
     msd_calculated_aggregates = compute_MSD_aggregates()
     push!(msd_data, (timesteps, msd_calculated_monomers, msd_calculated_aggregates))
+end
+
+"""
+Save_Number_Monomers_Cleared(timesteps)
+
+Appends a record of the current `timesteps` and the total number of cleared monomers to `Number_Monomers_Cleared`.
+
+# Global variables read
+- `Number_Monomers_Cleared`
+- `Total_Cleared_Monomers`
+"""
+
+function Save_Number_Monomers_Cleared(timesteps)
+    global Number_Monomers_Cleared
+    push!(Number_Monomers_Cleared, (timesteps, Total_Cleared_Monomers[]))
 end
 
 """
@@ -586,6 +607,23 @@ function Export_Fibril_Length_Count()
 end
 
 """
+Export_Monomers_Cleared_Data()
+
+Exports the recorded number of cleared monomers over time to a CSV file.
+
+# Global variables read
+- `Directory`
+- `timestamp`
+- `Number_Monomers_Cleared`
+"""
+
+function Export_Monomers_Cleared_Data()
+    global directory = Directory * "/Simulation_$timestamp"
+    file_path = "$directory/Oligomers_Cleared.csv"
+    CSV.write(file_path, Number_Monomers_Cleared)
+end
+
+"""
 Total_Monomers()
 
 Calculates the total number of monomers in the simulation.
@@ -679,32 +717,44 @@ end
 """
 Movement()
 
-Simulates the movement and interactions of monomers in the lattice.
+Runs the main simulation loop for protein aggregation dynamics.  
+Iterates over timesteps, moves monomers according to movement rules,  
+updates states, collects data, and exports results at the end.
 
-# Global variables modified
-- Various global variables (see function body for details)
+# Global variables read
+- `MAX_NumberMovements`
+- `Locations_and_States_Dict`
+- `MovementFunctions`
+- `Probability_of_Oligomer_Removal`
 
-# Calls
+# Functions called
 - `Create_Fibril_Length_DataFrame`
 - `Intial_Conditions`
 - `Counting_Timesteps`
 - `Current_Time`
+- `Randomly_Chooses_Movement`
 - `Retrieve_X_Coordinate`
 - `Retrieve_Y_Coordinate`
 - `Retrieve_Z_Coordinate`
-- Movement functions (e.g., `Movement_One_Coordinate`, etc.)
 - `Distinguishing_Monomers`
-- `Count_Oligomers_Aggregates`
-- `Count_Native_AggregateProne`
+- `Filter_Oligomer`
+- `Filter_Aggregate`
+- `Filter_Native`
+- `Filter_AggregateProne`
 - `Save_Data`
 - `Save_Data_Two`
 - `Save_MSD_Data`
+- `Save_Number_Monomers_Cleared`
 - `Count_Fibril_Length`
+- `Random_Dice`
+- `Randomly_Remove_Oligomer`
 - `Export_Final_Results`
 - `Export_Final_Results_Two`
 - `Export_MSD_Data`
 - `Export_Fibril_Length_Count`
+- `Export_Monomers_Cleared_Data`
 """
+
 
 
 function Movement()
@@ -769,12 +819,19 @@ function Movement()
           Save_Data(timesteps, oligomers, aggregates)
           Save_Data_Two(timesteps, native, AggregateProne)
           Save_MSD_Data(timesteps)
+          Save_Number_Monomers_Cleared(timesteps)
           Count_Fibril_Length(timesteps)
         # Timing for the timestep
         Past_Time_Raw = Current_Time_Raw
         Current_Time_Raw = now()
         Time_Taken_For_This_Timestep = Current_Time_Raw - Past_Time_Raw
         println("Time taken for timestep $timesteps: $Time_Taken_For_This_Timestep")
+
+        if Random_Dice() < Probability_of_Oligomer_Removal
+            #println("I am going to randomly remove an Oligomer")
+            Randomly_Remove_Oligomer()
+        end
+
         
     end
     
@@ -783,6 +840,67 @@ function Movement()
     Export_Final_Results_Two()
     Export_MSD_Data()
     Export_Fibril_Length_Count()
+    Export_Monomers_Cleared_Data()
+end
+
+"""
+Randomly_Remove_Oligomer()
+
+Selects a random oligomer from the system and removes all its associated monomers.  
+Updates the lattice states, clears the oligomer's center of mass information,  
+and tracks the number of monomers removed.
+
+# Global variables read
+- `Locations_and_States_Dict`
+
+# Functions called
+- `Filter_Oligomer`
+- `Update_Locations_States`
+- `Remove_Center_of_Mass_Info`
+- `Track_Cleared_Monomers`
+"""
+
+
+function Randomly_Remove_Oligomer()
+    All_Oligomers = Filter_Oligomer()
+
+    if isempty(All_Oligomers)
+        println("No oligomers available to remove.")
+        return
+    end
+
+    Random_Coordinate = rand(All_Oligomers)
+    _, Unique_Number = Locations_and_States_Dict[Random_Coordinate]
+
+    coords = collect(keys(Locations_and_States_Dict))
+
+    removed_count = Threads.Atomic{Int}(0)
+
+    @threads for i in 1:length(coords)
+        coord = coords[i]
+        _, unique_num = Locations_and_States_Dict[coord]
+        if unique_num == Unique_Number
+            Update_Locations_States(coord, 0, 0)
+            Threads.atomic_add!(removed_count, 1)
+        end
+    end
+
+    Remove_Center_of_Mass_Info(Unique_Number)
+
+    Track_Cleared_Monomers(removed_count[])
+end
+
+"""
+Track_Cleared_Monomers(n::Int)
+
+Increments the total count of cleared monomers by `n`.
+
+# Global variables read
+- `Total_Cleared_Monomers`
+"""
+
+function Track_Cleared_Monomers(n::Int)
+    Total_Cleared_Monomers[] += n
 end
 
 """
