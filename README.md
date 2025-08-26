@@ -2,8 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15230586.svg)](https://doi.org/10.5281/zenodo.15230586)
 
-
-This Julia project simulates the dynamics of protein aggregation on a 3D lattice. It models the stochastic movement and interaction of monomers, including state transitions (Native, Amyloid, Oligomer, Fibril), and the formation of larger aggregates under crowding and kinetic constraints.
+This Julia project simulates the dynamics of protein aggregation on a 3D lattice. It models the stochastic movement and interaction of monomers, including state transitions (Native, Aggregate-prone, Oligomer, Aggregate), and the formation of larger aggregates under crowding and kinetic constraints. The model also incorporates a clearance mechanism inspired by the glymphatic system, implemented as the random removal of oligomeric species at each timestep according to a user-defined probability.
 
 ---
 
@@ -23,6 +22,8 @@ This folder contains scripts used to process, summarize, and visualize simulatio
 - `Append_Amyloid_and_Native.jl`: Extracts and appends native and amyloid monomer counts from each simulation.
 - `Append_Aggregate_and_Oligomer.jl`: Processes aggregate and oligomer counts.
 - `Average_All_Monomers_vs_Timesteps.jl`: Plots average species counts over time across all simulations.
+- `Append_Oligomer_Clearance_Data.jl`: Extracts and appends monomers that were oligomer species that were removed from they system 
+- `Average_Oligomers_Cleared_vs_Timesteps.jl`: Plots average number of monomers removed over time across all simulations
 - `Input_Parameters_Analysis.csv`: Parameter sheet used by the master script to configure analysis runs.
 ---
 
@@ -46,7 +47,8 @@ This project uses the following Julia packages:
 - The simulation is based on a simplified kinetic model of protein aggregation  
 - Monomer movement is stochastic and may not fully reflect complex biophysical constraints  
 - Periodic boundary conditions are applied to simulate a continuous environment  
-- Crowders (if enabled) are modeled as static, spherical obstacles with fixed radii  
+- Crowders (if enabled) are modeled as static, spherical obstacles with fixed radii
+- Oligomers can be randomly removed at each timestep, with the probability of removal set by the user. Setting this probability to 0 disables the function.  
 
 ---
 
