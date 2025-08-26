@@ -312,4 +312,4 @@ This image shows the average number of monomers cleared from oligomers across al
         * `Appending_Oligomers_Clearance_Count.csv`  
     * It is generated using the script: `Average_Oligomers_Cleared_vs_Timesteps.jl`  
 
-
+ 
