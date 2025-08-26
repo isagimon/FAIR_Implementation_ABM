@@ -61,6 +61,7 @@ The parameters below can be configured directly at the top of the `Main_Simulati
 - `Crowder_Concentration_Spheres`: Concentration of crowders (optional).
 - `Obstacle`: Boolean to enable or disable crowders.
 - `Sphere_Volume`: Volume of a single crowder sphere.
+- `Probability_of_Oligomer_Removal`: Probability of removing a random oligomer in a timestep
 
 ---
 
@@ -72,6 +73,7 @@ The simulation generates the following outputs:
 
 - `Oligomer_and_Aggregate_Count_Results.csv`: Tracks oligomer and aggregate counts over time.
 - `Native_and_AggregateProne_Count_Results.csv`: Counts of native vs. AggregateProne monomers.
+- `Oligomers_Cleared.csv`: Number of monomers cleared from oligomeric species
 - `MSD_Data.csv`: Mean squared displacement data for monomer diffusion.
 - `Fibril_Length_Count_Results.csv`: Tracks fibril length distributions.
 - `TimestepXXX.csv`: Snapshots of lattice states at specified timesteps.
@@ -111,6 +113,11 @@ Here’s what the columns represent in key `.csv` files:
 | Count         | How many fibrils of that length were observed at the end |
 
 
+### `Oligomers_Cleared.csv`
+| Column                 | Description                                              |
+|------------------------|----------------------------------------------------------|
+| Timestep               | Simulation timepoint                                     |
+| Number_Monomers_Cleared| Number of individual monomers cleared at each timestep. Since only oligomers can be cleared, this represents monomers removed from oligomeric species. |
 
 
 ---
