@@ -1,0 +1,901 @@
+  Activating project at `~/Desktop/FAIR_Implementation_ABM`
+┌ Warning: The active manifest file has dependencies that were resolved with a different julia version (1.10.0). Unexpected behavior may occur.
+└ @ ~/Desktop/FAIR_Implementation_ABM/Manifest.toml:0
+We are in Randomly_Assigns_Location_Monomers_Native
+We are in Randomly_Assigns_Location_Monomers_Amyloid
+The number of coordinates that are spheres: 0
+----------------------------------
+This is what timesteps looks like: 1
+Timestamp: 2:10:2026 Time 1-34-34.532 PM
+Time taken for timestep 1: 1026 milliseconds
+----------------------------------
+This is what timesteps looks like: 2
+Timestamp: 2:10:2026 Time 1-34-35.560 PM
+Time taken for timestep 2: 34 milliseconds
+----------------------------------
+This is what timesteps looks like: 3
+Timestamp: 2:10:2026 Time 1-34-35.618 PM
+Time taken for timestep 3: 21 milliseconds
+----------------------------------
+This is what timesteps looks like: 4
+Timestamp: 2:10:2026 Time 1-34-35.639 PM
+Time taken for timestep 4: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 5
+Timestamp: 2:10:2026 Time 1-34-35.640 PM
+Time taken for timestep 5: 2 milliseconds
+----------------------------------
+This is what timesteps looks like: 6
+Timestamp: 2:10:2026 Time 1-34-35.642 PM
+Time taken for timestep 6: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 7
+Timestamp: 2:10:2026 Time 1-34-35.643 PM
+Time taken for timestep 7: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 8
+Timestamp: 2:10:2026 Time 1-34-35.644 PM
+Time taken for timestep 8: 142 milliseconds
+----------------------------------
+This is what timesteps looks like: 9
+Timestamp: 2:10:2026 Time 1-34-35.786 PM
+Time taken for timestep 9: 84 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 10
+Timestamp: 2:10:2026 Time 1-34-35.871 PM
+Time taken for timestep 10: 13 milliseconds
+----------------------------------
+This is what timesteps looks like: 11
+Timestamp: 2:10:2026 Time 1-34-35.884 PM
+Time taken for timestep 11: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 12
+Timestamp: 2:10:2026 Time 1-34-35.885 PM
+Time taken for timestep 12: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 13
+Timestamp: 2:10:2026 Time 1-34-35.886 PM
+Time taken for timestep 13: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 14
+Timestamp: 2:10:2026 Time 1-34-35.887 PM
+Time taken for timestep 14: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 15
+Timestamp: 2:10:2026 Time 1-34-35.888 PM
+Time taken for timestep 15: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 16
+Timestamp: 2:10:2026 Time 1-34-35.889 PM
+Time taken for timestep 16: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 17
+Timestamp: 2:10:2026 Time 1-34-35.890 PM
+Time taken for timestep 17: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 18
+Timestamp: 2:10:2026 Time 1-34-35.891 PM
+Time taken for timestep 18: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 19
+Timestamp: 2:10:2026 Time 1-34-35.892 PM
+Time taken for timestep 19: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 20
+Timestamp: 2:10:2026 Time 1-34-35.893 PM
+Time taken for timestep 20: 14 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 21
+Timestamp: 2:10:2026 Time 1-34-35.907 PM
+Time taken for timestep 21: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 22
+Timestamp: 2:10:2026 Time 1-34-35.908 PM
+Time taken for timestep 22: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 23
+Timestamp: 2:10:2026 Time 1-34-35.909 PM
+Time taken for timestep 23: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 24
+Timestamp: 2:10:2026 Time 1-34-35.910 PM
+Time taken for timestep 24: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 25
+Timestamp: 2:10:2026 Time 1-34-35.911 PM
+Time taken for timestep 25: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 26
+Timestamp: 2:10:2026 Time 1-34-35.912 PM
+Time taken for timestep 26: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 27
+Timestamp: 2:10:2026 Time 1-34-35.913 PM
+Time taken for timestep 27: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 28
+Timestamp: 2:10:2026 Time 1-34-35.914 PM
+Time taken for timestep 28: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 29
+Timestamp: 2:10:2026 Time 1-34-35.915 PM
+Time taken for timestep 29: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 30
+Timestamp: 2:10:2026 Time 1-34-35.916 PM
+Time taken for timestep 30: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 31
+Timestamp: 2:10:2026 Time 1-34-35.917 PM
+Time taken for timestep 31: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 32
+Timestamp: 2:10:2026 Time 1-34-35.918 PM
+Time taken for timestep 32: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 33
+Timestamp: 2:10:2026 Time 1-34-35.919 PM
+Time taken for timestep 33: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 34
+Timestamp: 2:10:2026 Time 1-34-35.920 PM
+Time taken for timestep 34: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 35
+Timestamp: 2:10:2026 Time 1-34-35.921 PM
+Time taken for timestep 35: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 36
+Timestamp: 2:10:2026 Time 1-34-35.922 PM
+Time taken for timestep 36: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 37
+Timestamp: 2:10:2026 Time 1-34-35.923 PM
+Time taken for timestep 37: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 38
+Timestamp: 2:10:2026 Time 1-34-35.924 PM
+Time taken for timestep 38: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 39
+Timestamp: 2:10:2026 Time 1-34-35.925 PM
+Time taken for timestep 39: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 40
+Timestamp: 2:10:2026 Time 1-34-35.926 PM
+Time taken for timestep 40: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 41
+Timestamp: 2:10:2026 Time 1-34-35.927 PM
+Time taken for timestep 41: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 42
+Timestamp: 2:10:2026 Time 1-34-35.928 PM
+Time taken for timestep 42: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 43
+Timestamp: 2:10:2026 Time 1-34-35.929 PM
+Time taken for timestep 43: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 44
+Timestamp: 2:10:2026 Time 1-34-35.930 PM
+Time taken for timestep 44: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 45
+Timestamp: 2:10:2026 Time 1-34-35.931 PM
+Time taken for timestep 45: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 46
+Timestamp: 2:10:2026 Time 1-34-35.932 PM
+Time taken for timestep 46: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 47
+Timestamp: 2:10:2026 Time 1-34-35.933 PM
+Time taken for timestep 47: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 48
+Timestamp: 2:10:2026 Time 1-34-35.934 PM
+Time taken for timestep 48: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 49
+Timestamp: 2:10:2026 Time 1-34-35.935 PM
+Time taken for timestep 49: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 50
+Timestamp: 2:10:2026 Time 1-34-35.936 PM
+Time taken for timestep 50: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 51
+Timestamp: 2:10:2026 Time 1-34-35.937 PM
+Time taken for timestep 51: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 52
+Timestamp: 2:10:2026 Time 1-34-35.938 PM
+Time taken for timestep 52: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 53
+Timestamp: 2:10:2026 Time 1-34-35.939 PM
+Time taken for timestep 53: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 54
+Timestamp: 2:10:2026 Time 1-34-35.940 PM
+Time taken for timestep 54: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 55
+Timestamp: 2:10:2026 Time 1-34-35.941 PM
+Time taken for timestep 55: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 56
+Timestamp: 2:10:2026 Time 1-34-35.942 PM
+Time taken for timestep 56: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 57
+Timestamp: 2:10:2026 Time 1-34-35.943 PM
+Time taken for timestep 57: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 58
+Timestamp: 2:10:2026 Time 1-34-35.944 PM
+Time taken for timestep 58: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 59
+Timestamp: 2:10:2026 Time 1-34-35.945 PM
+Time taken for timestep 59: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 60
+Timestamp: 2:10:2026 Time 1-34-35.946 PM
+Time taken for timestep 60: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 61
+Timestamp: 2:10:2026 Time 1-34-35.948 PM
+Time taken for timestep 61: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 62
+Timestamp: 2:10:2026 Time 1-34-35.949 PM
+Time taken for timestep 62: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 63
+Timestamp: 2:10:2026 Time 1-34-35.950 PM
+Time taken for timestep 63: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 64
+Timestamp: 2:10:2026 Time 1-34-35.951 PM
+Time taken for timestep 64: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 65
+Timestamp: 2:10:2026 Time 1-34-35.952 PM
+Time taken for timestep 65: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 66
+Timestamp: 2:10:2026 Time 1-34-35.953 PM
+Time taken for timestep 66: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 67
+Timestamp: 2:10:2026 Time 1-34-35.954 PM
+Time taken for timestep 67: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 68
+Timestamp: 2:10:2026 Time 1-34-35.955 PM
+Time taken for timestep 68: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 69
+Timestamp: 2:10:2026 Time 1-34-35.956 PM
+Time taken for timestep 69: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 70
+Timestamp: 2:10:2026 Time 1-34-35.957 PM
+Time taken for timestep 70: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 71
+Timestamp: 2:10:2026 Time 1-34-35.958 PM
+Time taken for timestep 71: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 72
+Timestamp: 2:10:2026 Time 1-34-35.959 PM
+Time taken for timestep 72: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 73
+Timestamp: 2:10:2026 Time 1-34-35.960 PM
+Time taken for timestep 73: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 74
+Timestamp: 2:10:2026 Time 1-34-35.961 PM
+Time taken for timestep 74: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 75
+Timestamp: 2:10:2026 Time 1-34-35.962 PM
+Time taken for timestep 75: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 76
+Timestamp: 2:10:2026 Time 1-34-35.963 PM
+Time taken for timestep 76: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 77
+Timestamp: 2:10:2026 Time 1-34-35.964 PM
+Time taken for timestep 77: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 78
+Timestamp: 2:10:2026 Time 1-34-35.965 PM
+Time taken for timestep 78: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 79
+Timestamp: 2:10:2026 Time 1-34-35.966 PM
+Time taken for timestep 79: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 80
+Timestamp: 2:10:2026 Time 1-34-35.967 PM
+Time taken for timestep 80: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 81
+Timestamp: 2:10:2026 Time 1-34-35.968 PM
+Time taken for timestep 81: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 82
+Timestamp: 2:10:2026 Time 1-34-35.969 PM
+Time taken for timestep 82: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 83
+Timestamp: 2:10:2026 Time 1-34-35.970 PM
+Time taken for timestep 83: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 84
+Timestamp: 2:10:2026 Time 1-34-35.971 PM
+Time taken for timestep 84: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 85
+Timestamp: 2:10:2026 Time 1-34-35.972 PM
+Time taken for timestep 85: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 86
+Timestamp: 2:10:2026 Time 1-34-35.973 PM
+Time taken for timestep 86: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 87
+Timestamp: 2:10:2026 Time 1-34-35.974 PM
+Time taken for timestep 87: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 88
+Timestamp: 2:10:2026 Time 1-34-35.975 PM
+Time taken for timestep 88: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 89
+Timestamp: 2:10:2026 Time 1-34-35.976 PM
+Time taken for timestep 89: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 90
+Timestamp: 2:10:2026 Time 1-34-35.978 PM
+Time taken for timestep 90: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 91
+Timestamp: 2:10:2026 Time 1-34-35.979 PM
+Time taken for timestep 91: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 92
+Timestamp: 2:10:2026 Time 1-34-35.980 PM
+Time taken for timestep 92: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 93
+Timestamp: 2:10:2026 Time 1-34-35.981 PM
+Time taken for timestep 93: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 94
+Timestamp: 2:10:2026 Time 1-34-35.982 PM
+Time taken for timestep 94: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 95
+Timestamp: 2:10:2026 Time 1-34-35.983 PM
+Time taken for timestep 95: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 96
+Timestamp: 2:10:2026 Time 1-34-35.983 PM
+Time taken for timestep 96: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 97
+Timestamp: 2:10:2026 Time 1-34-35.984 PM
+Time taken for timestep 97: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 98
+Timestamp: 2:10:2026 Time 1-34-35.985 PM
+Time taken for timestep 98: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 99
+Timestamp: 2:10:2026 Time 1-34-35.986 PM
+Time taken for timestep 99: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 100
+Timestamp: 2:10:2026 Time 1-34-35.987 PM
+Time taken for timestep 100: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 101
+Timestamp: 2:10:2026 Time 1-34-35.989 PM
+Time taken for timestep 101: 7 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 102
+Timestamp: 2:10:2026 Time 1-34-35.996 PM
+Time taken for timestep 102: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 103
+Timestamp: 2:10:2026 Time 1-34-35.997 PM
+Time taken for timestep 103: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 104
+Timestamp: 2:10:2026 Time 1-34-35.998 PM
+Time taken for timestep 104: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 105
+Timestamp: 2:10:2026 Time 1-34-35.999 PM
+Time taken for timestep 105: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 106
+Timestamp: 2:10:2026 Time 1-34-36.0 PM
+Time taken for timestep 106: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 107
+Timestamp: 2:10:2026 Time 1-34-36.1 PM
+Time taken for timestep 107: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 108
+Timestamp: 2:10:2026 Time 1-34-36.2 PM
+Time taken for timestep 108: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 109
+Timestamp: 2:10:2026 Time 1-34-36.3 PM
+Time taken for timestep 109: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 110
+Timestamp: 2:10:2026 Time 1-34-36.4 PM
+Time taken for timestep 110: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 111
+Timestamp: 2:10:2026 Time 1-34-36.5 PM
+Time taken for timestep 111: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 112
+Timestamp: 2:10:2026 Time 1-34-36.6 PM
+Time taken for timestep 112: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 113
+Timestamp: 2:10:2026 Time 1-34-36.7 PM
+Time taken for timestep 113: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 114
+Timestamp: 2:10:2026 Time 1-34-36.8 PM
+Time taken for timestep 114: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 115
+Timestamp: 2:10:2026 Time 1-34-36.9 PM
+Time taken for timestep 115: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 116
+Timestamp: 2:10:2026 Time 1-34-36.10 PM
+Time taken for timestep 116: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 117
+Timestamp: 2:10:2026 Time 1-34-36.12 PM
+Time taken for timestep 117: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 118
+Timestamp: 2:10:2026 Time 1-34-36.12 PM
+Time taken for timestep 118: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 119
+Timestamp: 2:10:2026 Time 1-34-36.13 PM
+Time taken for timestep 119: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 120
+Timestamp: 2:10:2026 Time 1-34-36.14 PM
+Time taken for timestep 120: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 121
+Timestamp: 2:10:2026 Time 1-34-36.15 PM
+Time taken for timestep 121: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 122
+Timestamp: 2:10:2026 Time 1-34-36.16 PM
+Time taken for timestep 122: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 123
+Timestamp: 2:10:2026 Time 1-34-36.17 PM
+Time taken for timestep 123: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 124
+Timestamp: 2:10:2026 Time 1-34-36.18 PM
+Time taken for timestep 124: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 125
+Timestamp: 2:10:2026 Time 1-34-36.19 PM
+Time taken for timestep 125: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 126
+Timestamp: 2:10:2026 Time 1-34-36.20 PM
+Time taken for timestep 126: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 127
+Timestamp: 2:10:2026 Time 1-34-36.21 PM
+Time taken for timestep 127: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 128
+Timestamp: 2:10:2026 Time 1-34-36.22 PM
+Time taken for timestep 128: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 129
+Timestamp: 2:10:2026 Time 1-34-36.23 PM
+Time taken for timestep 129: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 130
+Timestamp: 2:10:2026 Time 1-34-36.24 PM
+Time taken for timestep 130: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 131
+Timestamp: 2:10:2026 Time 1-34-36.25 PM
+Time taken for timestep 131: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 132
+Timestamp: 2:10:2026 Time 1-34-36.26 PM
+Time taken for timestep 132: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 133
+Timestamp: 2:10:2026 Time 1-34-36.27 PM
+Time taken for timestep 133: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 134
+Timestamp: 2:10:2026 Time 1-34-36.28 PM
+Time taken for timestep 134: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 135
+Timestamp: 2:10:2026 Time 1-34-36.29 PM
+Time taken for timestep 135: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 136
+Timestamp: 2:10:2026 Time 1-34-36.30 PM
+Time taken for timestep 136: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 137
+Timestamp: 2:10:2026 Time 1-34-36.31 PM
+Time taken for timestep 137: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 138
+Timestamp: 2:10:2026 Time 1-34-36.32 PM
+Time taken for timestep 138: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 139
+Timestamp: 2:10:2026 Time 1-34-36.33 PM
+Time taken for timestep 139: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 140
+Timestamp: 2:10:2026 Time 1-34-36.34 PM
+Time taken for timestep 140: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 141
+Timestamp: 2:10:2026 Time 1-34-36.35 PM
+Time taken for timestep 141: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 142
+Timestamp: 2:10:2026 Time 1-34-36.36 PM
+Time taken for timestep 142: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 143
+Timestamp: 2:10:2026 Time 1-34-36.37 PM
+Time taken for timestep 143: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 144
+Timestamp: 2:10:2026 Time 1-34-36.38 PM
+Time taken for timestep 144: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 145
+Timestamp: 2:10:2026 Time 1-34-36.39 PM
+Time taken for timestep 145: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 146
+Timestamp: 2:10:2026 Time 1-34-36.39 PM
+Time taken for timestep 146: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 147
+Timestamp: 2:10:2026 Time 1-34-36.41 PM
+Time taken for timestep 147: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 148
+Timestamp: 2:10:2026 Time 1-34-36.42 PM
+Time taken for timestep 148: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 149
+Timestamp: 2:10:2026 Time 1-34-36.43 PM
+Time taken for timestep 149: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 150
+Timestamp: 2:10:2026 Time 1-34-36.43 PM
+Time taken for timestep 150: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 151
+Timestamp: 2:10:2026 Time 1-34-36.44 PM
+Time taken for timestep 151: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 152
+Timestamp: 2:10:2026 Time 1-34-36.45 PM
+Time taken for timestep 152: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 153
+Timestamp: 2:10:2026 Time 1-34-36.46 PM
+Time taken for timestep 153: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 154
+Timestamp: 2:10:2026 Time 1-34-36.47 PM
+Time taken for timestep 154: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 155
+Timestamp: 2:10:2026 Time 1-34-36.48 PM
+Time taken for timestep 155: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 156
+Timestamp: 2:10:2026 Time 1-34-36.49 PM
+Time taken for timestep 156: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 157
+Timestamp: 2:10:2026 Time 1-34-36.50 PM
+Time taken for timestep 157: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 158
+Timestamp: 2:10:2026 Time 1-34-36.51 PM
+Time taken for timestep 158: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 159
+Timestamp: 2:10:2026 Time 1-34-36.52 PM
+Time taken for timestep 159: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 160
+Timestamp: 2:10:2026 Time 1-34-36.53 PM
+Time taken for timestep 160: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 161
+Timestamp: 2:10:2026 Time 1-34-36.54 PM
+Time taken for timestep 161: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 162
+Timestamp: 2:10:2026 Time 1-34-36.55 PM
+Time taken for timestep 162: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 163
+Timestamp: 2:10:2026 Time 1-34-36.56 PM
+Time taken for timestep 163: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 164
+Timestamp: 2:10:2026 Time 1-34-36.57 PM
+Time taken for timestep 164: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 165
+Timestamp: 2:10:2026 Time 1-34-36.58 PM
+Time taken for timestep 165: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 166
+Timestamp: 2:10:2026 Time 1-34-36.59 PM
+Time taken for timestep 166: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 167
+Timestamp: 2:10:2026 Time 1-34-36.60 PM
+Time taken for timestep 167: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 168
+Timestamp: 2:10:2026 Time 1-34-36.61 PM
+Time taken for timestep 168: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 169
+Timestamp: 2:10:2026 Time 1-34-36.62 PM
+Time taken for timestep 169: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 170
+Timestamp: 2:10:2026 Time 1-34-36.63 PM
+Time taken for timestep 170: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 171
+Timestamp: 2:10:2026 Time 1-34-36.64 PM
+Time taken for timestep 171: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 172
+Timestamp: 2:10:2026 Time 1-34-36.65 PM
+Time taken for timestep 172: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 173
+Timestamp: 2:10:2026 Time 1-34-36.66 PM
+Time taken for timestep 173: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 174
+Timestamp: 2:10:2026 Time 1-34-36.67 PM
+Time taken for timestep 174: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 175
+Timestamp: 2:10:2026 Time 1-34-36.68 PM
+Time taken for timestep 175: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 176
+Timestamp: 2:10:2026 Time 1-34-36.69 PM
+Time taken for timestep 176: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 177
+Timestamp: 2:10:2026 Time 1-34-36.70 PM
+Time taken for timestep 177: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 178
+Timestamp: 2:10:2026 Time 1-34-36.71 PM
+Time taken for timestep 178: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 179
+Timestamp: 2:10:2026 Time 1-34-36.72 PM
+Time taken for timestep 179: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 180
+Timestamp: 2:10:2026 Time 1-34-36.73 PM
+Time taken for timestep 180: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 181
+Timestamp: 2:10:2026 Time 1-34-36.74 PM
+Time taken for timestep 181: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 182
+Timestamp: 2:10:2026 Time 1-34-36.75 PM
+Time taken for timestep 182: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 183
+Timestamp: 2:10:2026 Time 1-34-36.76 PM
+Time taken for timestep 183: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 184
+Timestamp: 2:10:2026 Time 1-34-36.77 PM
+Time taken for timestep 184: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 185
+Timestamp: 2:10:2026 Time 1-34-36.79 PM
+Time taken for timestep 185: 0 milliseconds
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 186
+Timestamp: 2:10:2026 Time 1-34-36.80 PM
+Time taken for timestep 186: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 187
+Timestamp: 2:10:2026 Time 1-34-36.81 PM
+Time taken for timestep 187: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 188
+Timestamp: 2:10:2026 Time 1-34-36.82 PM
+Time taken for timestep 188: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 189
+Timestamp: 2:10:2026 Time 1-34-36.83 PM
+Time taken for timestep 189: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 190
+Timestamp: 2:10:2026 Time 1-34-36.84 PM
+Time taken for timestep 190: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 191
+Timestamp: 2:10:2026 Time 1-34-36.85 PM
+Time taken for timestep 191: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 192
+Timestamp: 2:10:2026 Time 1-34-36.86 PM
+Time taken for timestep 192: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 193
+Timestamp: 2:10:2026 Time 1-34-36.87 PM
+Time taken for timestep 193: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 194
+Timestamp: 2:10:2026 Time 1-34-36.88 PM
+Time taken for timestep 194: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 195
+Timestamp: 2:10:2026 Time 1-34-36.89 PM
+Time taken for timestep 195: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 196
+Timestamp: 2:10:2026 Time 1-34-36.90 PM
+Time taken for timestep 196: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 197
+Timestamp: 2:10:2026 Time 1-34-36.91 PM
+Time taken for timestep 197: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 198
+Timestamp: 2:10:2026 Time 1-34-36.92 PM
+Time taken for timestep 198: 1 millisecond
+----------------------------------
+This is what timesteps looks like: 199
+Timestamp: 2:10:2026 Time 1-34-36.94 PM
+Time taken for timestep 199: 0 milliseconds
+----------------------------------
+This is what timesteps looks like: 200
+Timestamp: 2:10:2026 Time 1-34-36.95 PM
+Time taken for timestep 200: 1 millisecond
+No oligomers available to remove.
+----------------------------------
+This is what timesteps looks like: 201

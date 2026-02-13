@@ -1,92 +1,99 @@
-# 🧬 Protein Aggregation Simulation
+# 🧬 Protein Aggregation Simulation (FAIR_Implementation_ABM)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15230586.svg)](https://doi.org/10.5281/zenodo.15230586)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15230587.svg)](https://doi.org/10.5281/zenodo.15230587)
 
-This Julia project simulates the dynamics of protein aggregation on a 3D lattice. It models the stochastic movement and interaction of monomers, including state transitions (Native, Aggregate-prone, Oligomer, Aggregate), and the formation of larger aggregates under crowding and kinetic constraints. The model also incorporates a clearance mechanism inspired by the glymphatic system, implemented as the random removal of oligomeric species at each timestep according to a user-defined probability.
-
----
-
-## 📂 Files
-
-- `Agents.jl`: Functions for lattice generation and monomer initialization  
-- `run_simulation.jl`: Core logic for monomer movement, state transitions, aggregation rules, and data collection  
-- `USAGE.md`: Complete instructions for running the model and interpreting output  
-- `LICENSE`: License file (Apache 2.0)  
-
----
-### 📊 Post-Simulation Analysis (`Analysis/` Folder)
-
-This folder contains scripts used to process, summarize, and visualize simulation outputs stored in `Data_Collection/Compare_Simulations/`.
-
-- `Run_All_Analysis_Scripts.jl`: Master script that runs all the analysis pipelines based on parameters from a CSV file.
-- `Append_Amyloid_and_Native.jl`: Extracts and appends native and amyloid monomer counts from each simulation.
-- `Append_Aggregate_and_Oligomer.jl`: Processes aggregate and oligomer counts.
-- `Average_All_Monomers_vs_Timesteps.jl`: Plots average species counts over time across all simulations.
-- `Append_Oligomer_Clearance_Data.jl`: Extracts and appends monomers that were oligomer species that were removed from they system 
-- `Average_Oligomers_Cleared_vs_Timesteps.jl`: Plots average number of monomers removed over time across all simulations
-- `Input_Parameters_Analysis.csv`: Parameter sheet used by the master script to configure analysis runs.
----
-
-## ⚙️ Dependencies
-
-This project uses the following Julia packages:
-
-- `Random`  
-- `Plots`  
-- `DataFrames`  
-- `CSV`  
-- `Dates`  
-- `XLSX`  
-- `Profile`  
-- `Base.Threads`  
+This repository provides a Julia implementation of an agent-based model (ABM) for protein aggregation on a 3D FCC lattice. The model captures stochastic monomer movement, conformational switching (Native ↔ AggregateProne), oligomer formation/dissociation, fibril/aggregate growth, macromolecular crowding (optional static spherical obstacles), and an optional oligomer clearance mechanism implemented as stochastic removal.
 
 ---
 
-## ⚠️ Assumptions and Limitations
+## Quick start
 
-- The simulation is based on a simplified kinetic model of protein aggregation  
-- Monomer movement is stochastic and may not fully reflect complex biophysical constraints  
-- Periodic boundary conditions are applied to simulate a continuous environment  
-- Crowders (if enabled) are modeled as static, spherical obstacles with fixed radii
-- Oligomers can be randomly removed at each timestep, with the probability of removal set by the user. Setting this probability to 0 disables the function.  
+```bash
+git clone https://github.com/isagimon/FAIR_Implementation_ABM.git
+cd FAIR_Implementation_ABM
+julia run_simulation.jl
+```
 
----
-
-## 📜 License
-
-This project is licensed under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0).  
-You may not use this file except in compliance with the License.  
-See the `LICENSE` file for full terms.
+Outputs are written to a timestamped run directory under `Data_Collection/` by default (e.g., `Data_Collection/Simulation_2025-04-16_11-08-52/`).
 
 ---
 
-## 👩‍🔬 Authors
+## Repository structure
 
-- Santiago Schnell  
-- Conner Sandefur  
-- Isabella Gimon  
-
----
-
-## 📣 Citation
-
-You are welcome to:
-
-- Use the code for research or educational purposes  
-- Modify parameters or reaction rules for your own models  
-- Extend the codebase to include new features  
-
-Please cite this repository if you use it in published work.  
-For citation details, see the [`CITATION.cff`](CITATION.cff) file.
+- `src/FAIR_Implementation_ABM.jl` — Julia package entry point (public API)
+- `src/Agents.jl` — lattice generation and initial agent assignment
+- `src/Environment_and_Movement.jl` — movement/aggregation dynamics, data collection, and export
+- `run_simulation.jl` — convenience script to activate/instantiate the Julia environment and run one simulation
+- `Analysis/` — post-simulation analysis scripts
+- `Input_Parameters.csv` — simulation configuration
+- `Input_Parameters_Analysis.csv` — analysis configuration
+- `USAGE.md` — detailed usage and output descriptions
+- `DATA_DICTIONARY.md` — column definitions for output files
 
 ---
 
-## 📖 Usage Instructions
+## Post-simulation analysis (`Analysis/`)
 
-For detailed instructions on how to run and use this model, see the [USAGE.md](USAGE.md) file.
+The analysis scripts operate on simulation run folders under `Data_Collection/` and write aggregated results to `Data_Collection/Compare_Simulations/`.
 
+Run the full analysis pipeline:
 
-## 📬 Contact
+```bash
+julia Run_All_Analysis_Scripts.jl
+```
 
-If you have questions or would like to collaborate, please open an issue or contact the maintainer:  
-📧 **Isabella Gimon** – igimon@nd.edu
+Key scripts:
+- `Run_All_Analysis_Scripts.jl` — master pipeline driver
+- `Append_AggregateProne_and_Native.jl` — aggregates Native/AggregateProne counts across runs
+- `Append_Aggregate_and_Oligomer.jl` — aggregates Aggregate/Oligomer counts across runs
+- `Average_All_Monomers_vs_Timesteps.jl` — plots average counts over time
+- `Append_Oligomer_Clearance_Data.jl` — aggregates cleared-oligomer counts across runs
+- `Average_Oligomers_Cleared_vs_Timesteps.jl` — plots average cleared counts over time
+
+---
+
+## Configuration
+
+Edit `Input_Parameters.csv` to change:
+- lattice size and agent counts
+- kinetic probabilities
+- number of timesteps
+- whether crowding is enabled and its parameters
+- output location (`Directory`)
+
+For portability, `Directory` should be a relative path (default: `Data_Collection`).
+
+Optional environment overrides (useful in HPC/CI):
+- `FAIR_ABM_PARAMETER_FILE` — path to an alternate parameter CSV (instead of `Input_Parameters.csv`)
+- `FAIR_ABM_OUTPUT_DIR` — override the output root directory (instead of `Directory`)
+
+---
+
+## Dependencies
+
+The core model uses standard Julia packages including:
+- `Random`, `Dates`
+- `CSV`, `DataFrames`
+- `Plots`
+
+(See `Project.toml` / `Manifest.toml` for the fully pinned environment.)
+
+---
+
+## License
+
+Apache License 2.0. See `LICENSE`.
+
+---
+
+## Authors
+
+- Santiago Schnell
+- Conner Sandefur
+- Isabella Gimón
+
+---
+
+## Citation
+
+Please cite the repository (see `CITATION.cff`) if you use it in published work.

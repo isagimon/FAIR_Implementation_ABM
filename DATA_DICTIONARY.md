@@ -137,6 +137,27 @@ This file contains the cumulative number of monomers cleared from oligomers at e
       * **Units:** Number of monomers  
       * **Example:** 0, 2, 15, 100  
 
+## 6. `Simulation_Information.csv`
+
+This file contains a record of the simulation configuration and parameter values used for a specific run (i.e., a provenance snapshot). It lists each parameter name alongside the value used for that run and a short instruction/description.
+
+* **File Description:** `Simulation_Information.csv`  
+* **Data Type:** Comma-Separated Values (CSV)  
+* **Columns:**
+
+  * `Input_Parameters`  
+      * **Description:** The name of the simulation parameter or configuration variable recorded for the run.  
+      * **Data Type:** String  
+      * **Units:** Not applicable  
+      * **Example:** `Lattice_Size`, `Max_NumberMonomers_Native`, `Native_to_AggregateProne`, `Fibril_Growth`, `Probability_of_Oligomer_Removal`  
+
+  * `Values`  
+      * **Description:** The value used for the corresponding parameter in this simulation run.  
+      * **Data Type:** Integer / Float / Boolean / String (parameter-dependent)  
+      * **Units:** Parameter-dependent  
+      * **Example:** `3`, `15`, `0.2`, `0.9`, `FALSE`, `1000`  
+
+
 
 📁 Analysis Output Files (Compare_Simulations/)
 

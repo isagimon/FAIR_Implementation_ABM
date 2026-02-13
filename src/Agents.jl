@@ -1,5 +1,4 @@
 using Random
-using Plots
 using CSV
 using DataFrames
 
@@ -122,23 +121,44 @@ function load_csv_parameters(file_path::String)
     return params
 end
 
-# Path to the input parameters CSV file
-file_path = "/Users/isabellagimon/Desktop/FAIR_Implementation_ABM/Input_Parameters.csv"
+# Path to the input parameters CSV file (portable)
+# You may override this by setting ENV["FAIR_ABM_PARAMETER_FILE"] before running the simulation.
+const PARAMETER_FILE = abspath(get(ENV, "FAIR_ABM_PARAMETER_FILE", joinpath(@__DIR__, "..", "Input_Parameters.csv")))
 
-# Load parameters
-Parameters = load_csv_parameters(file_path)
+# Keep globals, but DON'T set them at module load time
+global Parameters = Dict{String,Any}()
 
-# Assign simulation parameters
-Lattice_Size = Parameters["Lattice_Size"]                                 # Size of the cubic lattice (Lattice_Size x Lattice_Size x Lattice_Size)
-Max_NumberMonomers_Native = Parameters["Max_NumberMonomers_Native"]       # Maximum number of native monomers
-Max_NumberMonomers_AggregateProne = Parameters["Max_NumberMonomers_AggregateProne"]     # Maximum number of amyloid-prone monomers
-Obstacle_Radius = Parameters["Obstacle_Radius"]                           # Radius of spherical crowders
-Crowder_Concentration_Spheres = Parameters["Crowder_Concentration_Spheres"] # Crowder concentration
-Obstacle = Parameters["Spheres?"]                                         # Boolean: Enable/Disable crowders
-#Sphere_Volume = Parameters["Sphere_Volume"]                               # Volume of a sphere
+global Lattice_Size::Int = 0
+global Max_NumberMonomers_Native::Int = 0
+global Max_NumberMonomers_AggregateProne::Int = 0
+global Obstacle_Radius::Int = 0
+global Crowder_Concentration_Spheres::Float64 = 0.0
+global Obstacle::Bool = false
 
-# Debugging: Print loaded parameters
-println("Loaded Parameters: ", Parameters)
+"""
+    load_parameters!() -> Dict{String,Any}
+
+Loads Input_Parameters.csv fresh and updates all simulation globals.
+Call this at the start of every simulation run.
+"""
+function load_parameters!()
+    global Parameters = load_csv_parameters(PARAMETER_FILE)
+    apply_parameters!()
+
+    global Lattice_Size = Parameters["Lattice_Size"]
+    global Max_NumberMonomers_Native = Parameters["Max_NumberMonomers_Native"]
+    global Max_NumberMonomers_AggregateProne = Parameters["Max_NumberMonomers_AggregateProne"]
+    global Obstacle_Radius = Parameters["Obstacle_Radius"]
+    global Crowder_Concentration_Spheres = Float64(Parameters["Crowder_Concentration_Spheres"])
+    global Obstacle = Bool(Parameters["Spheres?"])
+
+    println("Loaded Parameters (fresh): ", Parameters)
+    return Parameters
+end
+
+
+# Tracks the number of FCC coordinates assigned to crowders (computed during initialization)
+global Number_of_Coordinates_Sphere = 0
 
 """
     Generate_Coordinates(Lattice_Size::Int)
@@ -166,6 +186,13 @@ Also randomly assigns monomer states (Native and Amyloid-prone) and optionally g
 """
 function Generate_Coordinates(Lattice_Size)
     global Locations_and_States_Dict
+
+    # Reset all agent/lattice state so the simulation can be rerun in the same Julia session
+    empty!(Locations_and_States_Dict)
+    empty!(Initial_Locations_and_States_Dict)
+    empty!(Possible_Sphere_Coordinates_Set)
+    empty!(used_centers)
+
 
     for X in 0:(Lattice_Size - 1)
         for Y in 0:(Lattice_Size - 1)
@@ -1220,6 +1247,34 @@ end
 
 #-------------------------------------------------
 
-Generate_Coordinates(Lattice_Size)
-Number_of_Coordinates_Sphere = Count_Number_Coordinates_Spheres()
-println("The number of coordinates that are spheres: $Number_of_Coordinates_Sphere")
+"""
+reset_agents!()
+
+Clears all agent/lattice state (coordinates, initial-state copy, and crowder bookkeeping).
+
+This is useful when rerunning simulations in the same Julia session or when running unit tests.
+"""
+function reset_agents!()
+    empty!(Locations_and_States_Dict)
+    empty!(Initial_Locations_and_States_Dict)
+    empty!(Possible_Sphere_Coordinates_Set)
+    empty!(used_centers)
+    return nothing
+end
+
+"""
+initialize_simulation!()
+
+Initializes the FCC lattice and assigns monomers/crowders according to the current
+`Input_Parameters.csv` settings.
+
+This must be called before running the movement/aggregation dynamics.
+"""
+function initialize_simulation!()
+    load_parameters!()                
+    Generate_Coordinates(Lattice_Size)
+
+    global Number_of_Coordinates_Sphere = Count_Number_Coordinates_Spheres()
+    println("The number of coordinates that are spheres: $Number_of_Coordinates_Sphere")
+    return nothing
+end

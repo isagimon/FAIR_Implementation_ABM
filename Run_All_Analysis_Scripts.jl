@@ -1,61 +1,56 @@
-# Load required libraries
-using CSV             # For reading and writing CSV files
-using DataFrames      # For handling tabular data in a structured format
+# Run_All_Analysis_Scripts.jl
+#
+# Runs the post-processing / analysis pipeline over a set of simulation output folders
+# located under `Data_Collection/` (or another directory configured in
+# Input_Parameters_Analysis.csv).
+#
+# Usage:
+#   julia Run_All_Analysis_Scripts.jl
+#
+
+using Pkg
+Pkg.activate(@__DIR__)
+Pkg.instantiate()
+
+using CSV
+using DataFrames
 
 # ------------------------------------------------------------------------
-# Set up project paths and load parameter values from a central CSV file
+# Project paths and analysis parameters
 # ------------------------------------------------------------------------
 
-# Define the absolute path to the root of your project directory
-basic_directory = "/Users/isabellagimon/Desktop/FAIR_Implementation_ABM"
+basic_directory = @__DIR__
+csv_file = joinpath(basic_directory, "Input_Parameters_Analysis.csv")
 
-# Construct the full path to the input parameter file located in the root directory
-csv_file = "$basic_directory/Input_Parameters_Analysis.csv"
-
-# Read the CSV file into a DataFrame where each row defines a key-value pair of parameters
 parameters_df = CSV.read(csv_file, DataFrame)
 
-# Extract the simulation data directory path from the parameter table
-directory = parameters_df[parameters_df.Input_Parameters .== "Directory", :Values][1]
+# Directory containing simulation folders
+directory_value = string(parameters_df[parameters_df.Input_Parameters .== "Directory", :Values][1])
+directory = isabspath(directory_value) ? directory_value : joinpath(basic_directory, directory_value)
 
-# Extract the number of timesteps to analyze and convert it from string to integer
-Number_Timesteps = parse(Int, parameters_df[parameters_df.Input_Parameters .== "Total_Timesteps", :Values][1])
+# Timesteps and total monomers
+Number_Timesteps = parse(Int, string(parameters_df[parameters_df.Input_Parameters .== "Total_Timesteps", :Values][1]))
+Total_Number_Monomers = parse(Int, string(parameters_df[parameters_df.Input_Parameters .== "Total_Number_Monomers", :Values][1]))
 
-# Extract the total number of monomers (used optionally in some analysis) and convert to integer
-Total_Number_Monomers = parse(Int, parameters_df[parameters_df.Input_Parameters .== "Total_Number_Monomers", :Values][1])
-
-# Print the loaded parameters for verification and debugging
 println("Directory: ", directory)
 println("Number of Timesteps: ", Number_Timesteps)
 println("Total Number of Monomers: ", Total_Number_Monomers)
 
-
-
 # ------------------------------------------------------------------------
-# Load and run analysis scripts that define and implement the core analysis logic
+# Run analysis scripts
 # ------------------------------------------------------------------------
 
-# Load the script that extracts native and amyloid monomer counts
-include("$basic_directory/Analysis/Append_AggregateProne_and_Native.jl")
-# Append native and amyloid monomer count data across all simulations
+include(joinpath(basic_directory, "Analysis", "Append_AggregateProne_and_Native.jl"))
 run_append_AggregateProne_and_native(directory, Number_Timesteps)
 
-# Load the script that extracts aggregate and oligomer counts
-include("$basic_directory/Analysis/Append_Aggregate_and_Oligomer.jl")
-# Append aggregate and oligomer count data into combined CSVs
+include(joinpath(basic_directory, "Analysis", "Append_Aggregate_and_Oligomer.jl"))
 run_process_aggregate_excel_sheets(directory, Number_Timesteps)
 
-# Load the script that plots average monomer state counts over time
-include("$basic_directory/Analysis/Average_All_Monomers_vs_Timesteps.jl")
-# Generate and save a line plot of average monomer state counts over time
+include(joinpath(basic_directory, "Analysis", "Average_All_Monomers_vs_Timesteps.jl"))
 run_plot_all_monomer_states(directory, Number_Timesteps)
 
-# Load the script that extracts monomers cleared
-include("$basic_directory/Analysis/Append_Oligomer_Clearance_Data.jl")
-#Append cleared oligomers into a combined CSV file
+include(joinpath(basic_directory, "Analysis", "Append_Oligomer_Clearance_Data.jl"))
 Extract_Oligomers_Cleared_Count_Excel_Sheets(directory, Number_Timesteps)
 
-# Load the script that plots average monomer cleared over time
-include("$basic_directory/Analysis/Average_Oligomers_Cleared_vs_Timesteps.jl")
-#Generate and save a line plot of cleared monomers over time
+include(joinpath(basic_directory, "Analysis", "Average_Oligomers_Cleared_vs_Timesteps.jl"))
 Import_Data(directory, Number_Timesteps)

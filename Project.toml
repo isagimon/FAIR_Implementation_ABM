@@ -1,8 +1,7 @@
 name = "FAIR_Implementation_ABM"
 uuid = "b1a23e12-3456-7890-1234-56789abcdef0"
 authors = ["Isabella Gimon <igimon@nd.edu>"]
-version = "0.1.0"
-
+version = "1.2.0"
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
@@ -15,3 +14,9 @@ Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SBMLToolkit = "86080e66-c8ac-44c2-a1a0-9adaadfe4a4e"
 ThreadsX = "ac1d9e8a-700a-412c-b207-f0111f4b6c0d"
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
+

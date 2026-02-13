@@ -1,7 +1,5 @@
-using XLSX
 using DataFrames
 using Dates
-using FilePaths
 using CSV
 
 """
@@ -31,9 +29,7 @@ Authors: Santiago Schnell, Conner Sandefur, Isabella Gimon
 Dependencies:
 - CSV  
 - DataFrames  
-- XLSX  
 - Dates  
-- FilePaths  
 
 License: http://www.apache.org/licenses/LICENSE-2.0
 """

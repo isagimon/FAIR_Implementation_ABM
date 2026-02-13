@@ -1,5 +1,4 @@
 using Random
-using Plots
 using DataFrames
 using CSV
 using Dates
@@ -14,38 +13,87 @@ Includes monomer diffusion, conformational transitions (Native ↔ aggregatePron
 Implements FAIR principles:
 
 - **Findable**: Structured naming, exported per-timestep state CSVs.
-- **Accessible**: Results stored in interoperable formats (CSV, XLSX).
+- **Accessible**: Results stored in interoperable formats (CSV).
 - **Interoperable**: Uses Julia-native types and standard packages.
 - **Reusable**: Modular code, consistent global state, reproducible runs.
 
 Author: [Your Lab/Project Name]
 Creation Date: [Date]
 Last Modified: [Date]
-Dependencies: Random, Plots, DataFrames, CSV, Dates, XLSX, Profile, Base.Threads, Agents.jl
+Dependencies: Random, Plots, DataFrames, CSV, Dates, Profile, Base.Threads, Agents.jl
 License: http://www.apache.org/licenses/LICENSE-2.0
 """
 
 
-include("Agents.jl")
+include(joinpath(@__DIR__, "Agents.jl"))
 
 
 ##########################
 # INPUT PARAMETERS
 ##########################
 
-# Simulation controls
-const MAX_NumberMovements        = Float64(Parameters["MAX_NumberMovements"])        # Maximum number of simulation timesteps
-const Native_to_AggregateProne  = Float64(Parameters["Native_to_AggregateProne"])           # Probability of native to aggregateProne transition, P(Native → AggregateProne)
-const AggregateProne_to_Native  = Float64(Parameters["AggregateProne_to_Native"])           # Probability of aggregateProne to native transition, P(AggregateProne → Native)
-const Oligomer_Formation        = Float64(Parameters["Oligomer_Formation"])          # Probability of oligomer formation, P(2 AggregateProne → Oligomer)
-const Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rate"]) # Probability of oligomer dissociation, P(Oligomer → monomers)
-const Fibril_Formation          = Float64(Parameters["Fibril_Formation"])            # Probability of fibril formation, P(AggregateProne + Oligomer → Fibril)
-const Fibril_Growth             = Float64(Parameters["Fibril_Growth"])               # Probability of fibril growth, P(Fibril + AggregateProne → Grow)
-const Directory                 = String(Parameters["Directory"])
-const Probability_of_Oligomer_Removal = Float64(Parameters["Probability_of_Oligomer_Removal"])
+##########################
+# INPUT PARAMETERS (initialized later)
+##########################
 
-# Derived parameter
-global max_fibril_size = Max_NumberMonomers_AggregateProne + Max_NumberMonomers_Native
+# These are set by `apply_parameters!()` after Parameters is loaded from CSV.
+global MAX_NumberMovements::Int = 0
+global Native_to_AggregateProne::Float64 = 0.0
+global AggregateProne_to_Native::Float64 = 0.0
+global Oligomer_Formation::Float64 = 0.0
+global Oligomer_Dissociation_rate::Float64 = 0.0
+global Fibril_Formation::Float64 = 0.0
+global Fibril_Growth::Float64 = 0.0
+global Probability_of_Oligomer_Removal::Float64 = 0.0
+
+global OUTPUT_ROOT::String = ""
+global Directory::String = ""  # legacy alias
+
+# Derived parameter (depends on counts loaded in Agents.jl)
+global max_fibril_size::Int = 0
+
+"""
+apply_parameters!()
+
+Reads values from the global `Parameters` dictionary and sets derived globals used by the simulation.
+Call this *after* `Parameters = load_csv_parameters(PARAMETER_FILE)` is executed.
+"""
+function apply_parameters!()
+    # --- Simulation controls ---
+    global MAX_NumberMovements        = Int(Parameters["MAX_NumberMovements"])
+    global Native_to_AggregateProne   = Float64(Parameters["Native_to_AggregateProne"])
+    global AggregateProne_to_Native   = Float64(Parameters["AggregateProne_to_Native"])
+    global Oligomer_Formation         = Float64(Parameters["Oligomer_Formation"])
+    global Oligomer_Dissociation_rate = Float64(Parameters["Oligomer_Dissociation_rate"])
+    global Fibril_Formation           = Float64(Parameters["Fibril_Formation"])
+    global Fibril_Growth              = Float64(Parameters["Fibril_Growth"])
+    global Probability_of_Oligomer_Removal = Float64(Parameters["Probability_of_Oligomer_Removal"])
+
+    global Max_NumberMonomers_Native         = Int(Parameters["Max_NumberMonomers_Native"])
+    global Max_NumberMonomers_AggregateProne = Int(Parameters["Max_NumberMonomers_AggregateProne"])
+
+    # --- Output root directory: ALWAYS repo/Data_Collection ---
+    local data_root = joinpath(@__DIR__, "..", "Data_Collection")
+    mkpath(data_root)
+    global OUTPUT_ROOT = abspath(get(ENV, "FAIR_ABM_OUTPUT_DIR", data_root))
+    global Directory   = OUTPUT_ROOT
+
+    # --- Derived parameter ---
+    global max_fibril_size = Int(Max_NumberMonomers_AggregateProne + Max_NumberMonomers_Native)
+
+    return nothing
+end
+
+
+
+
+
+
+# Run-specific output directory and identifier (set when Make_Directory() is called)
+global timestamp = ""
+global directory = ""
+
+
 
 ##########################
 # GLOBAL STATE VARIABLES
@@ -86,19 +134,14 @@ const dict_lock = ReentrantLock()
 # TIMESTAMPING
 ##########################
 
-current_time = now()
-hour_now = hour(current_time)
-minute_now = minute(current_time)
-second_now = second(current_time)
-millisecond_now = Dates.millisecond(current_time)
+"""
+safe_timestamp()
 
-am_pm = ifelse(hour_now < 12, "AM", "PM")
-adjusted_hour = ifelse(hour_now > 12, hour_now - 12, ifelse(hour_now == 0, 12, hour_now))
-
-global timestamp = string(
-    month(current_time), ":", day(current_time), ":", year(current_time),
-    " Time ", adjusted_hour, "-", minute_now, "-", second_now, ".", millisecond_now, " ", am_pm
-)
+Returns a filesystem-safe timestamp string (safe on Windows/macOS/Linux).
+"""
+function safe_timestamp()
+    return Dates.format(now(), "yyyy-mm-dd_HH-MM-SS")
+end
 
 
 
@@ -113,13 +156,36 @@ Creates the directory structure for saving simulation results and calls Input_Pa
 # Calls
 - `Input_Parameters`
 """
+function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
+                        run_id::AbstractString=safe_timestamp())
 
-function Make_Directory()
-        # Use mkpath to create the entire directory path, including parent directories
-        global directory = "$Directory/Simulation_$timestamp"
-        mkpath("$directory")
-        
+    # Absolute repo root (FAIR_Implementation_ABM/)
+    local repo_root = abspath(joinpath(@__DIR__, ".."))
+
+    # Absolute Data_Collection path (FAIR_Implementation_ABM/Data_Collection/)
+    local data_root = abspath(joinpath(repo_root, "Data_Collection"))
+    mkpath(data_root)
+
+    # If caller didn't provide a root, or they accidentally pass the repo root,
+    # always redirect to Data_Collection.
+    if output_root === nothing || abspath(String(output_root)) == repo_root
+        output_root = data_root
+    else
+        output_root = abspath(String(output_root))
+        mkpath(output_root)
+    end
+
+    global timestamp = run_id
+    global directory = abspath(joinpath(output_root, "Simulation_$timestamp"))
+    mkpath(directory)
+
+
+    # Record input parameters for this run
+    Input_Parameters()
+
+    return directory
 end
+
 
 """
 Input_Parameters()
@@ -138,8 +204,6 @@ Saves the input parameters of the simulation to a CSV file.
 - `Oligomer_Dissociation_rate`
 - `Fibril_Formation`
 - `Fibril_Growth`
-- `Fibril_No_Growth`
-- `use_windows_dir`
 
 # Calls
 - `Append_Input_Parameters`
@@ -148,34 +212,47 @@ Saves the input parameters of the simulation to a CSV file.
 
 
 function Input_Parameters()
-        File_Path = "$Directory/Simulation_Information.csv"  
-    
+    # Store a run-local copy of key parameters for provenance
+    File_Path = joinpath(directory, "Simulation_Information.csv")
+
     Data = DataFrame(
-    File_Name = [timestamp], Lattice_Size = [Lattice_Size::Int], Number_Native_Monomers = [Max_NumberMonomers_Native::Int],
-    Number_AggregateProne_Monomers = [Max_NumberMonomers_AggregateProne::Int], Timesteps = [MAX_NumberMovements::Int], Probability_Native_to_AggregateProne = [Native_to_AggreagateProne::Float64],
-    Probability_AggregateProne_to_Native = [AggregateProne_to_Native::Float64], Probability_Oligomer_Formation = [Oligomer_Formation::Float64], Probability_Oligomer_Dissociation = [Oligomer_Dissociation_rate::Float64],
-    Probability_Fibril_Formation = [Fibril_Formation::Float64], Probability_Fibril_Growth = [Fibril_Growth::Float64], Probability_Fibril_No_Growth = [Fibril_No_Growth::Float64]
-)
+        Run_ID = [timestamp],
+        Lattice_Size = [Lattice_Size],
+        Number_Native_Monomers = [Max_NumberMonomers_Native],
+        Number_AggregateProne_Monomers = [Max_NumberMonomers_AggregateProne],
+        Timesteps = [MAX_NumberMovements],
+        P_Native_to_AggregateProne = [Native_to_AggregateProne],
+        P_AggregateProne_to_Native = [AggregateProne_to_Native],
+        P_Oligomer_Formation = [Oligomer_Formation],
+        P_Oligomer_Dissociation = [Oligomer_Dissociation_rate],
+        P_Fibril_Formation = [Fibril_Formation],
+        P_Fibril_Growth = [Fibril_Growth],
+        P_Oligomer_Removal = [Probability_of_Oligomer_Removal],
+        Crowders_Enabled = [Obstacle],
+        Obstacle_Radius = [Obstacle_Radius],
+        Crowder_Concentration_Spheres = [Crowder_Concentration_Spheres],
+    )
+
     Append_Input_Parameters(File_Path, Data)
 end
 
 """
 Append_Input_Parameters(File_Path, Data)
 
-Appends the input parameters to an existing CSV file.
+Appends the input parameters to an existing CSV file, creating the file if it does not exist.
 
 # Arguments
 - `File_Path::String`: The path to the CSV file.
 - `Data::DataFrame`: The DataFrame containing the input parameters.
 """
-
 function Append_Input_Parameters(File_Path, Data)
-
-    existing_data = CSV.File(File_Path) |> DataFrame
-    
-    appended_data = vcat(existing_data, Data)
-    
-    CSV.write(File_Path, appended_data)
+    if isfile(File_Path)
+        existing_data = CSV.read(File_Path, DataFrame)
+        appended_data = vcat(existing_data, Data)
+        CSV.write(File_Path, appended_data)
+    else
+        CSV.write(File_Path, Data)
+    end
 end
 
 """
@@ -316,10 +393,7 @@ Exports the Mean Squared Displacement (MSD) data to a CSV file.
 """
 
 function Export_MSD_Data()
-    global directory = "$Directory/Simulation_$timestamp"
-    
-    # Write the CSV file
-    file_path = "$directory/MSD_Data.csv"
+    file_path = joinpath(directory, "MSD_Data.csv")
     CSV.write(file_path, msd_data)
 end
 
@@ -398,14 +472,16 @@ Exports a DataFrame to a CSV file, with filename based on the timestep.
 
 
 function Export_DataFrame(df, CurrentTimestep)
-        if CurrentTimeStep <10
-            CSV.write("$Directory/Simulation_$timestamp/Timestep00$CurrentTimeStep.csv", df)
-        elseif CurrentTimeStep >=10 && CurrentTimeStep < 100
-            CSV.write("$Directory/Simulation_$timestamp/Timestep0$CurrentTimeStep.csv", df)
-        elseif CurrentTimeStep >=100 && CurrentTimeStep < 100000
-           CSV.write("$Directory/Simulation_$timestamp/Timestep$CurrentTimeStep.csv", df)
-        end
-    
+    # Mirror the original naming convention (Timestep00X / Timestep0XX / TimestepXXX)
+    file_name = if CurrentTimestep < 10
+        "Timestep00$(CurrentTimestep).csv"
+    elseif CurrentTimestep < 100
+        "Timestep0$(CurrentTimestep).csv"
+    else
+        "Timestep$(CurrentTimestep).csv"
+    end
+
+    CSV.write(joinpath(directory, file_name), df)
 end
 
 """
@@ -518,12 +594,19 @@ Creates a DataFrame to store the counts of fibrils of different lengths.
 """
 
 function Create_Fibril_Length_DataFrame()
+
+    # 🔴 SAFETY CHECK
+    if max_fibril_size == 0
+        error("max_fibril_size == 0. apply_parameters!() was not executed correctly before creating the fibril dataframe.")
+    end
+
     # Get the data and column names from the formatter
     data, column_names = Format_Fibril_Length_DataFrame()
 
     # Initialize the global Fibril_Length_Count DataFrame
     global Fibril_Length_Count = DataFrame(data, Symbol.(column_names))
 end
+
 
 """
 Format_Fibril_Length_DataFrame()
@@ -564,10 +647,7 @@ Exports the final simulation results to a CSV file.
 """
 
 function Export_Final_Results()
-    global directory = "$Directory/Simulation_$timestamp"
-    
-    # Write the CSV file
-    file_path = "$directory/Oligomer_and_Aggregate_Count_Results.csv"
+    file_path = joinpath(directory, "Oligomer_and_Aggregate_Count_Results.csv")
     CSV.write(file_path, results_df)
 end
 
@@ -582,10 +662,7 @@ Exports the final counts of native and AggregateProne monomers to a CSV file.
 """
 
 function Export_Final_Results_Two()
-    global directory = "$Directory/Simulation_$timestamp"
-    
-    # Write the CSV file
-    file_path = "$directory/Native_and_AggregateProne_Count_Results.csv"
+    file_path = joinpath(directory, "Native_and_AggregateProne_Count_Results.csv")
     CSV.write(file_path, results_df_two)
 end
 
@@ -602,7 +679,7 @@ Exports the fibril length count data to a CSV file.
 
 function Export_Fibril_Length_Count()
     #global Directory = directory * "Simulation_$timestamp"
-    file_path = "$directory/Fibril_Length_Count_Results.csv"
+    file_path = joinpath(directory, "Fibril_Length_Count_Results.csv")
     CSV.write(file_path, Fibril_Length_Count)
 end
 
@@ -618,8 +695,7 @@ Exports the recorded number of cleared monomers over time to a CSV file.
 """
 
 function Export_Monomers_Cleared_Data()
-    global directory = Directory * "/Simulation_$timestamp"
-    file_path = "$directory/Oligomers_Cleared.csv"
+    file_path = joinpath(directory, "Oligomers_Cleared.csv")
     CSV.write(file_path, Number_Monomers_Cleared)
 end
 
@@ -758,6 +834,7 @@ updates states, collects data, and exports results at the end.
 
 
 function Movement()
+    println("DEBUG before Create_Fibril_Length_DataFrame: max_fibril_size = ", max_fibril_size)
     Create_Fibril_Length_DataFrame()
     Intial_Conditions()
     #Export_Timestep_Information()
@@ -3997,5 +4074,64 @@ end
 
 
 
-Make_Directory()
-Movement()
+
+"""
+reset_simulation!()
+
+Resets counters and in-memory data structures so a new run can be executed in the same Julia session.
+"""
+function reset_simulation!()
+    # Agent/lattice state
+    reset_agents!()
+
+    # Counters
+    global timesteps = 0
+    global CurrentTimeStep = 0
+    Total_Cleared_Monomers[] = 0
+
+    # Data collection tables
+    global results_df       = DataFrame(Timestep = Int[], Oligomers = Int[], Aggregates = Int[])
+    global results_df_two   = DataFrame(Timestep = Int[], Native = Int[], AggregateProne = Int[])
+    global msd_data         = DataFrame(Timestep = Int[], MSD_Monomer = Float64[], MSD_Aggregate = Float64[])
+    global Number_Monomers_Cleared = DataFrame(Timestep = Int[], Number_Monomers_Cleared = Int[])
+
+    # Movement bookkeeping
+    empty!(Possible_Coordinate_Movements_Dict)
+    global available_numbers = collect(1:200000)
+
+    return nothing
+end
+
+"""
+function run_simulation(; output_root::Union{Nothing,AbstractString}=nothing,
+                        run_id::AbstractString=safe_timestamp())
+
+    reset_simulation!()
+
+    global Parameters = load_csv_parameters(PARAMETER_FILE)
+
+    apply_parameters!()
+
+    initialize_simulation!()
+    Make_Directory(output_root=output_root, run_id=run_id)
+    Movement()
+
+    return directory
+end
+
+
+"""
+function run_simulation(; output_root::AbstractString=OUTPUT_ROOT, run_id::AbstractString=safe_timestamp())
+   
+    reset_simulation!()
+
+    global Parameters = load_csv_parameters(PARAMETER_FILE)
+
+    apply_parameters!()
+
+    initialize_simulation!()
+    Make_Directory(output_root=output_root, run_id=run_id)
+    Movement()
+
+    return directory
+end
