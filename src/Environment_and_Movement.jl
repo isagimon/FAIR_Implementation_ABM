@@ -179,6 +179,11 @@ function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
     global directory = abspath(joinpath(output_root, "Simulation_$timestamp"))
     mkpath(directory)
 
+    # --- Write exact provenance snapshot of the input parameter file ---
+    local param_src = PARAMETER_FILE
+    local param_dest = joinpath(directory, "Input_Parameters_used.csv")
+    cp(param_src, param_dest; force=true)
+
 
     # Record input parameters for this run
     Input_Parameters()
