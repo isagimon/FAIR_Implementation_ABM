@@ -179,6 +179,11 @@ function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
     global directory = abspath(joinpath(output_root, "Simulation_$timestamp"))
     mkpath(directory)
 
+    if isdefined(Main, :PARAMETER_FILE)
+        param_copy_path = joinpath(directory, "Input_Parameters_used.csv")
+        cp(PARAMETER_FILE, param_copy_path; force=true)
+    end
+
 
     # Record input parameters for this run
     Input_Parameters()
@@ -325,7 +330,7 @@ return timestamp_for_timestep
 end
 
 """
-Intial_Conditions()
+Initial_Conditions()
 
 Initializes DataFrames to store simulation results.
 
@@ -335,7 +340,7 @@ Initializes DataFrames to store simulation results.
 - 'Number_Monomers_Cleared'
 """
 
-function Intial_Conditions()
+function Initial_Conditions()
     global results_df_two
     global results_df
     global Number_Monomers_Cleared
@@ -408,7 +413,7 @@ Randomly selects a movement option for a monomer.
 """
 
 function Randomly_Chooses_Movement() 
-    Move = Possible_Movement_Options[rand(1:13)]
+    Move = rand(1:length(Possible_Movement_Options))
     return Move
 end
 
@@ -834,9 +839,8 @@ updates states, collects data, and exports results at the end.
 
 
 function Movement()
-    println("DEBUG before Create_Fibril_Length_DataFrame: max_fibril_size = ", max_fibril_size)
     Create_Fibril_Length_DataFrame()
-    Intial_Conditions()
+    Initial_Conditions()
     #Export_Timestep_Information()
     # While loop for timesteps
     while MAX_NumberMovements >= Counting_Timesteps()
@@ -857,6 +861,12 @@ function Movement()
             
             # Randomly choose a movement type (e.g., "One" to "Eighteen")
             Movement = Randomly_Chooses_Movement()
+
+            # Guard for stay-in-place option
+            if Movement == "None"
+                 continue
+            end
+
 
             # Retrieve the coordinates of the current monomer
             X_Coordinate_Monomer = Retrieve_X_Coordinate(Monomer)
