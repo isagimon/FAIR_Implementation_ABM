@@ -24,6 +24,9 @@ csv_file = joinpath(basic_directory, "Input_Parameters_Analysis.csv")
 
 parameters_df = CSV.read(csv_file, DataFrame)
 
+clean_names = [strip(replace(String(name), '\ufeff' => "")) for name in names(parameters_df)]
+rename!(parameters_df, Symbol.(clean_names))
+
 # Directory containing simulation folders
 directory_value = string(parameters_df[parameters_df.Input_Parameters .== "Directory", :Values][1])
 directory = isabspath(directory_value) ? directory_value : joinpath(basic_directory, directory_value)
@@ -31,10 +34,6 @@ directory = isabspath(directory_value) ? directory_value : joinpath(basic_direct
 # Timesteps and total monomers
 Number_Timesteps = parse(Int, string(parameters_df[parameters_df.Input_Parameters .== "Total_Timesteps", :Values][1]))
 Total_Number_Monomers = parse(Int, string(parameters_df[parameters_df.Input_Parameters .== "Total_Number_Monomers", :Values][1]))
-
-println("Directory: ", directory)
-println("Number of Timesteps: ", Number_Timesteps)
-println("Total Number of Monomers: ", Total_Number_Monomers)
 
 # ------------------------------------------------------------------------
 # Run analysis scripts

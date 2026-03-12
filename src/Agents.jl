@@ -16,7 +16,7 @@ Implements FAIR principles:
 - **Reusable**: Modular functions with transparent global variables, enabling reproducibility across simulations.
 
 Key Features:
-- Supports initialization of Native (N), Amyloid-prone (A) monomers, Oligomers (O), and Fibrils (F).
+- Supports initialization of Native (N), AggregateProne (A) monomers
 - Crowders are modeled as static spheres generated at random locations.
 - Periodic boundary conditions incorporated for crowder creation.
 - All agents are tracked with unique numerical identifiers.
@@ -38,7 +38,7 @@ License: http://www.apache.org/licenses/LICENSE-2.0
 
 # State values for agents
 const NativeState_Value         = 1  # Native monomer
-const AggregateProne_Value        = 2  # Amyloid-prone monomer
+const AggregateProne_Value        = 2  # AggregateProne monomer
 const OligomerState_Value       = 3  # Oligomer
 const FibrilState_Value         = 4  # Fibril
 const SphereState_Value         = 5  # Crowder/Sphere
@@ -69,6 +69,94 @@ global Sphere_Unique_Numbers = collect(SPHERE_ID_RANGE)
 global Monomer_Unique_Numbers = collect(MONOMER_ID_RANGE)
 
 """
+    validate_parameters!(params::Dict) -> Dict
+
+Validates the simulation parameter dictionary loaded from CSV.
+
+Checks that required keys are present, probability values lie in [0, 1],
+integer-like parameters are nonnegative whole numbers, and `Obstacle_Radius`
+falls within the implemented range.
+
+# Arguments
+- `params::Dict`: Dictionary of parsed simulation parameters.
+
+# Returns
+- `Dict`: The validated parameter dictionary.
+
+# Throws
+- An error if any required parameter is missing or invalid.
+"""
+
+function validate_parameters!(params::Dict)
+    required_keys = [
+        "Directory",
+        "Timesteps",
+        "Initial_Number_Native_Monomers",
+        "Initial_Number_AggregateProne_Monomers",
+        "Probability_Native_Movement",
+        "Probability_Conformational_Change",
+        "Probability_AggregateProne_Movement",
+        "Probability_AggregateProne_Aggregation",
+        "Probability_Oligomer_Movement",
+        "Probability_Oligomer_Formation",
+        "Probability_Fibril_Movement",
+        "Probability_Fibril_Formation",
+        "Probability_Fibril_Growth",
+        "Obstacle_Radius"
+    ]
+
+    for key in required_keys
+        if !haskey(params, key)
+            error("Missing required parameter: $key")
+        end
+    end
+
+    probability_keys = [
+        "Probability_Native_Movement",
+        "Probability_Conformational_Change",
+        "Probability_AggregateProne_Movement",
+        "Probability_AggregateProne_Aggregation",
+        "Probability_Oligomer_Movement",
+        "Probability_Oligomer_Formation",
+        "Probability_Fibril_Movement",
+        "Probability_Fibril_Formation",
+        "Probability_Fibril_Growth"
+    ]
+
+    for key in probability_keys
+        value = params[key]
+        if !(0.0 <= value <= 1.0)
+            error("Parameter $key must be between 0 and 1. Got: $value")
+        end
+    end
+
+    integer_nonnegative_keys = [
+        "Timesteps",
+        "Initial_Number_Native_Monomers",
+        "Initial_Number_AggregateProne_Monomers",
+        "Obstacle_Radius"
+    ]
+
+    for key in integer_nonnegative_keys
+        value = params[key]
+        if value < 0
+            error("Parameter $key must be nonnegative. Got: $value")
+        end
+        if value != round(value)
+            error("Parameter $key must be an integer-valued quantity. Got: $value")
+        end
+    end
+
+    radius = Int(round(params["Obstacle_Radius"]))
+    if radius < 0 || radius >= 7
+        error("Obstacle_Radius must be an integer in the valid implemented range 0:6. Got: $radius")
+    end
+
+    return params
+end
+
+
+"""
     load_csv_parameters(file_path::String) -> Dict
 
 Loads simulation parameters from a CSV file into a dictionary.
@@ -89,14 +177,14 @@ Automatically detects Float64, Bool (`TRUE`/`FALSE`), or String values.
 function load_csv_parameters(file_path::String)
     df = CSV.read(file_path, DataFrame)
 
-    rename!(df, strip.(names(df)))
-    println("Updated column names: ", names(df))
+    clean_names = [strip(replace(String(name), '\ufeff' => "")) for name in names(df)]
+    rename!(df, Symbol.(clean_names))
 
     param_col = names(df)[1]
     value_col = names(df)[2]
 
     params = Dict(
-        strip(row[param_col]) => 
+        strip(string(row[param_col])) =>
         try
             parse(Float64, strip(string(row[value_col])))
         catch
@@ -117,9 +205,10 @@ function load_csv_parameters(file_path::String)
         end
     end
 
-    println("Loaded parameters: ", keys(params))
+    validate_parameters!(params)
     return params
 end
+
 
 # Path to the input parameters CSV file (portable)
 # You may override this by setting ENV["FAIR_ABM_PARAMETER_FILE"] before running the simulation.
@@ -152,7 +241,6 @@ function load_parameters!()
     global Crowder_Concentration_Spheres = Float64(Parameters["Crowder_Concentration_Spheres"])
     global Obstacle = Bool(Parameters["Spheres?"])
 
-    println("Loaded Parameters (fresh): ", Parameters)
     return Parameters
 end
 
@@ -167,7 +255,7 @@ Generates a complete 3D face-centered cubic lattice.
 
 Populates the global `Locations_and_States_Dict` with all corner and face-centered points
 at each unit cell position.  
-Also randomly assigns monomer states (Native and Amyloid-prone) and optionally generates spherical crowders.
+Also randomly assigns monomer states (Native and AggregateProne) and optionally generates spherical crowders.
 
 # Arguments
 - `Lattice_Size::Int`: The number of unit cells per axis (X, Y, Z).
@@ -181,7 +269,7 @@ Also randomly assigns monomer states (Native and Amyloid-prone) and optionally g
 - `Add_Position`
 - `Differentiate_Sphere_Crowder_Radius`
 - `Randomly_Assigns_Location_Monomers_Native`
-- `Randomly_Assigns_Location_Monomers_Amyloid`
+- `Randomly_Assigns_Location_Monomers_AggregateProne`
 - `Copy_Original_Location`
 """
 function Generate_Coordinates(Lattice_Size)
@@ -208,14 +296,14 @@ function Generate_Coordinates(Lattice_Size)
         Differentiate_Sphere_Crowder_Radius()
     end
     Randomly_Assigns_Location_Monomers_Native()
-    Randomly_Assigns_Location_Monomers_Amyloid()
+    Randomly_Assigns_Location_Monomers_AggregateProne()
     Copy_Original_Location()
 end
 
 """
     Copy_Original_Location()
 
-Copies all Native and Amyloid-prone monomer coordinates from `Locations_and_States_Dict`
+Copies all Native and AggregateProne monomer coordinates from `Locations_and_States_Dict`
 into `Initial_Locations_and_States_Dict`.
 
 This function preserves a copy of the initial state of the simulation,
@@ -225,7 +313,7 @@ before any dynamics (movement, aggregation) occur.
 - `Initial_Locations_and_States_Dict`
 
 # Notes
-- Only state values 1 (Native) and 2 (Amyloid-prone) are copied.
+- Only state values 1 (Native) and 2 (AggregateProne) are copied.
 """
 function Copy_Original_Location()
     global Initial_Locations_and_States_Dict
@@ -427,7 +515,6 @@ The number of monomers assigned is controlled by `Max_NumberMonomers_Native`.
 """
 function Randomly_Assigns_Location_Monomers_Native()
     global Locations_and_States_Dict
-    println("We are in Randomly_Assigns_Location_Monomers_Native")
     Monomers_Made_Native = 0
     keys_list = collect(keys(Locations_and_States_Dict))
 
@@ -444,29 +531,28 @@ function Randomly_Assigns_Location_Monomers_Native()
 end
 
 """
-    Randomly_Assigns_Location_Monomers_Amyloid()
+    Randomly_Assigns_Location_Monomers_AggregateProne()
 
-Randomly assigns the Amyloid-prone monomer state (2) to unoccupied lattice sites.
+Randomly assigns the AggregateProne monomer state (2) to unoccupied lattice sites.
 
 The number of monomers assigned is controlled by `Max_NumberMonomers_AggregateProne`.
 
 # Global variables modified
 - `Locations_and_States_Dict`
 """
-function Randomly_Assigns_Location_Monomers_Amyloid()
+function Randomly_Assigns_Location_Monomers_AggregateProne()
     global Locations_and_States_Dict
-    println("We are in Randomly_Assigns_Location_Monomers_Amyloid")
-    Monomers_Made_Amyloid = 0
+    Monomers_Made_AggregateProne = 0
     keys_list = collect(keys(Locations_and_States_Dict))
 
-    while Monomers_Made_Amyloid < Max_NumberMonomers_AggregateProne
+    while Monomers_Made_AggregateProne < Max_NumberMonomers_AggregateProne
         Random_Index = rand(1:length(keys_list))
         Random_Location = keys_list[Random_Index]
         State, _ = Locations_and_States_Dict[Random_Location]
 
         if State == 0
-            Assigns_State_Monomer_Amyloid(Random_Location)
-            Monomers_Made_Amyloid += 1
+            Assigns_State_Monomer_AggregateProne(Random_Location)
+            Monomers_Made_AggregateProne += 1
         end
     end
 end
@@ -489,14 +575,14 @@ function Assigns_State_Monomer_Native(Location)
 end
 
 """
-    Assigns_State_Monomer_Amyloid(Location::Tuple)
+    Assigns_State_Monomer_AggregateProne(Location::Tuple)
 
-Assigns the Amyloid-prone monomer state (2) and a random unique ID to a given coordinate.
+Assigns the AggregateProne monomer state (2) and a random unique ID to a given coordinate.
 
 # Arguments
 - `Location::Tuple`: (X, Y, Z) coordinate.
 """
-function Assigns_State_Monomer_Amyloid(Location)
+function Assigns_State_Monomer_AggregateProne(Location)
     global Locations_and_States_Dict
     Unique_Number = Randomly_Choosing_Unique_Number_Monomer()
     Locations_and_States_Dict[Location] = (AggregateProne_Value, Unique_Number)
@@ -550,7 +636,6 @@ end
 Generates spherical crowders of radius zero (single occupied lattice points).
 """
 function Generate_Spherical_Crowders_Radius_0()
-    println("We are in the function Generate_Spherical_Crowders_Radius_0")
 
     target_spheres = Calculate_Target_Number_of_Spheres()
     generated_spheres = 0
@@ -559,11 +644,9 @@ function Generate_Spherical_Crowders_Radius_0()
         success = Making_Spheres_Radius_0()
         if success
             generated_spheres += 1
-            println("Sphere #$generated_spheres created successfully.")
         end
     end
 
-    println("Finished generating spheres. Total spheres created: $generated_spheres.")
 end
 
 """
@@ -611,11 +694,9 @@ function Generate_Spherical_Crowders()
 
         if success
             generated_spheres += 1
-            println("Sphere #$generated_spheres created successfully.")
         end
     end
 
-    println("Finished generating spheres. Total spheres created: $generated_spheres.")
 end
 
 """
@@ -665,13 +746,11 @@ function Calling_Sphere_Coordinate_Functions()
        calculate_sphere_coordinates_upward_center_z(center_x, center_y, center_z) &&
        calculate_sphere_coordinates_downward_center_z(center_x, center_y, center_z)
 
-        println("✅ Successfully created a sphere at center ($center_x, $center_y, $center_z).")
         determine_growth_direction()
         Change_State_of_Sphere_Coordinates()
         Empty_Possible_Sphere_Coordinates()
         return true
     else
-        #println("⚠️ Failed to create a valid sphere. Retrying...")
         return false
     end
 end
@@ -803,7 +882,7 @@ function calculate_sphere_coordinates_upward_center_z(center_x, center_y, center
     for coordinate in keys(Locations_and_States_Dict)
         state, _ = Locations_and_States_Dict[coordinate]
         coordinate_x, coordinate_y, coordinate_z = coordinate
-        distance = Z_Coordiante_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+        distance = Z_Coordinate_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
 
         if distance <= Obstacle_Radius
             if state == 0
@@ -1042,7 +1121,7 @@ end
 
 
 """
-    Z_Coordiante_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
+    Z_Coordinate_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z) -> Float64
 
 Calculates the distance from the center to a coordinate in the positive Z direction.
 Handles boundary crossing using periodic wrapping.
@@ -1050,7 +1129,7 @@ Handles boundary crossing using periodic wrapping.
 # Returns
 - Distance as a Float64.
 """
-function Z_Coordiante_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
+function Z_Coordinate_Upward(center_x, center_y, center_z, coordinate_x, coordinate_y, coordinate_z)
     if coordinate_z < center_z  # Crossed periodic boundary
         distance_z = (Lattice_Size - center_z) + coordinate_z + 1
         return distance_from_center_Z_Coordinate_Exception(center_x, center_y, center_z, coordinate_x, coordinate_y, distance_z)
@@ -1086,10 +1165,8 @@ Assigns a sphere state (5) and a unique identifier to all coordinates stored in 
 This finalizes the creation of a sphere after its coordinates are determined.
 """
 function Change_State_of_Sphere_Coordinates()
-    println("Total number of coordinates assigned to sphere: ", length(Possible_Sphere_Coordinates_Set))
 
     Sphere_Unique_Number = Randomly_Choose_Unique_Number_Sphere()
-    println("Sphere assigned unique identifier: $Sphere_Unique_Number")
 
     for coordinate in keys(Possible_Sphere_Coordinates_Set)
         Assigns_State_Monomer_Sphere(coordinate, Sphere_Unique_Number)
@@ -1198,10 +1275,6 @@ function Calculate_Target_Number_of_Spheres()
 
     target_number_of_spheres = round(Int, target_occupied_spaces / Return_Sphere_Volume())
 
-    println("Total lattice locations: $total_locations")
-    println("Target occupied spaces based on desired concentration: $target_occupied_spaces")
-    println("Estimated number of spheres needed: $target_number_of_spheres")
-
     return target_number_of_spheres
 end
 
@@ -1242,6 +1315,8 @@ function Return_Sphere_Volume()
         return 1850
     elseif Obstacle_Radius == 6
         return 3300
+    else
+        error("Return_Sphere_Volume() is only implemented for Obstacle_Radius in 0:6. Got: $Obstacle_Radius")
     end
 end
 
@@ -1275,6 +1350,7 @@ function initialize_simulation!()
     Generate_Coordinates(Lattice_Size)
 
     global Number_of_Coordinates_Sphere = Count_Number_Coordinates_Spheres()
-    println("The number of coordinates that are spheres: $Number_of_Coordinates_Sphere")
     return nothing
 end
+
+

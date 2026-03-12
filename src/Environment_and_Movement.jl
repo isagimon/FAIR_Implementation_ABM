@@ -17,7 +17,7 @@ Implements FAIR principles:
 - **Interoperable**: Uses Julia-native types and standard packages.
 - **Reusable**: Modular code, consistent global state, reproducible runs.
 
-Author: [Your Lab/Project Name]
+Authors: Santiago Schnell, Conner Sandefur, Isabella Gimón
 Creation Date: [Date]
 Last Modified: [Date]
 Dependencies: Random, Plots, DataFrames, CSV, Dates, Profile, Base.Threads, Agents.jl
@@ -104,6 +104,14 @@ global CurrentTimeStep = 0      # Counter for exporting timestep information
 global Fibril_Length_Count      # DataFrame to store fibril length counts
 const Total_Cleared_Monomers = Ref(0) #Variable keeps track of monomers cleared
 
+# AUTHOR NOTE:
+# "None" is included as an explicit stay-in-place option in Possible_Movement_Options.
+# Because movement is sampled uniformly, this gives each monomer a 1/19 probability
+# of remaining in place during a timestep before any movement-function dispatch occurs.
+#
+# Keep "None" if an explicit no-move event is biologically intended.
+# Remove "None" if monomers should always attempt one of the 18 geometric moves,
+# and only stay in place when movement is blocked or fails by rule.
 # Movement directions
 const Possible_Movement_Options = [
     "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
@@ -143,7 +151,43 @@ function safe_timestamp()
     return Dates.format(now(), "yyyy-mm-dd_HH-MM-SS")
 end
 
+"""
+    Resolve_Output_Directory(output_root, repo_root, data_root) -> String
 
+Determines the base output directory for a simulation run.
+
+Priority order:
+1. `ENV["FAIR_ABM_OUTPUT_DIR"]` if defined and nonempty
+2. Explicit `output_root` passed to `Make_Directory`
+3. `Initial_Conditions["Directory"]` if available
+4. Fallback to `data_root`
+
+If a candidate path resolves to the repository root, it is redirected
+to `data_root` to avoid writing run folders into the repo root.
+
+# Arguments
+- `output_root`: Optional user-specified output directory.
+- `repo_root`: Absolute path to the repository root.
+- `data_root`: Absolute path to the `Data_Collection` directory.
+
+# Returns
+- `String`: Absolute path to the chosen output directory.
+"""
+
+function Resolve_Output_Directory(output_root, repo_root, data_root)
+    if haskey(ENV, "FAIR_ABM_OUTPUT_DIR") && !isempty(strip(ENV["FAIR_ABM_OUTPUT_DIR"]))
+        candidate = abspath(ENV["FAIR_ABM_OUTPUT_DIR"])
+        return candidate == repo_root ? data_root : candidate
+    elseif output_root !== nothing
+        candidate = abspath(String(output_root))
+        return candidate == repo_root ? data_root : candidate
+    elseif haskey(Initial_Conditions, "Directory") && !isempty(strip(String(Initial_Conditions["Directory"])))
+        candidate = abspath(String(Initial_Conditions["Directory"]))
+        return candidate == repo_root ? data_root : candidate
+    else
+        return data_root
+    end
+end
 
 """
 Make_Directory()
@@ -166,14 +210,8 @@ function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
     local data_root = abspath(joinpath(repo_root, "Data_Collection"))
     mkpath(data_root)
 
-    # If caller didn't provide a root, or they accidentally pass the repo root,
-    # always redirect to Data_Collection.
-    if output_root === nothing || abspath(String(output_root)) == repo_root
-        output_root = data_root
-    else
-        output_root = abspath(String(output_root))
-        mkpath(output_root)
-    end
+    output_root = Resolve_Output_Directory(output_root, repo_root, data_root)
+    mkpath(output_root)
 
     global timestamp = run_id
     global directory = abspath(joinpath(output_root, "Simulation_$timestamp"))
@@ -184,13 +222,11 @@ function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
         cp(PARAMETER_FILE, param_copy_path; force=true)
     end
 
-
     # Record input parameters for this run
     Input_Parameters()
 
     return directory
 end
-
 
 """
 Input_Parameters()
@@ -413,8 +449,7 @@ Randomly selects a movement option for a monomer.
 """
 
 function Randomly_Chooses_Movement() 
-    Move = rand(1:length(Possible_Movement_Options))
-    return Move
+    return rand(Possible_Movement_Options)
 end
 
 """
@@ -810,7 +845,7 @@ updates states, collects data, and exports results at the end.
 
 # Functions called
 - `Create_Fibril_Length_DataFrame`
-- `Intial_Conditions`
+- `Initial_Conditions`
 - `Counting_Timesteps`
 - `Current_Time`
 - `Randomly_Chooses_Movement`
@@ -2549,7 +2584,23 @@ const MovementFunctions = Dict(
         ((X, Y, Z) -> (Y == Lattice_Size), Movement_Eighteen_Coordinate_Exception_Fourth),
         ((X, Y, Z) -> true, Movement_Eighteen_Coordinate)
     ]
-)
+) 
+    let
+    valid_sampled_moves = Set(filter(x -> x != "None", Possible_Movement_Options))
+    dispatch_moves = Set(keys(MovementFunctions))
+
+    missing_from_dispatch = setdiff(valid_sampled_moves, dispatch_moves)
+    extra_in_dispatch = setdiff(dispatch_moves, valid_sampled_moves)
+
+    if !isempty(missing_from_dispatch) || !isempty(extra_in_dispatch)
+        error("""
+        Movement option / dispatch mismatch detected.
+
+        Missing from MovementFunctions: $(collect(missing_from_dispatch))
+        Extra in MovementFunctions: $(collect(extra_in_dispatch))
+        """)
+    end
+end
 
 """
 Distinguishing_Monomers(Monomer, Desired_Location, Type_of_Movement)
@@ -3679,13 +3730,13 @@ end
 """
 Filter_AggregateProne()
 
-Filters the Locations_and_States_Dict to return an array of coordinates of AggregateProne-prone monomers (state == 2).
+Filters the Locations_and_States_Dict to return an array of coordinates of AggregateProne monomers (state == 2).
 
 # Global variables read
 - `Locations_and_States_Dict`
 
 # Returns
-- `Vector{Tuple{Float64, Float64, Float64}}`: An array of coordinates of AggregateProne-prone monomers.
+- `Vector{Tuple{Float64, Float64, Float64}}`: An array of coordinates of AggregateProne monomers.
 """
 
 function Filter_AggregateProne()
@@ -4113,26 +4164,30 @@ function reset_simulation!()
 end
 
 """
-function run_simulation(; output_root::Union{Nothing,AbstractString}=nothing,
+run_simulation(; output_root::Union{Nothing,AbstractString}=nothing,
+               run_id::AbstractString=safe_timestamp())
+
+Resets the simulation state, loads parameters, applies them, initializes
+the lattice, creates the output directory, and runs the full simulation.
+
+# Keyword Arguments
+- `output_root::Union{Nothing,AbstractString}=nothing`: Optional output root directory.
+- `run_id::AbstractString=safe_timestamp()`: Identifier used for the simulation folder.
+
+# Returns
+- `String`: Absolute path to the simulation output directory.
+
+# Calls
+- `reset_simulation!`
+- `load_csv_parameters`
+- `apply_parameters!`
+- `initialize_simulation!`
+- `Make_Directory`
+- `Movement`
+"""
+function run_simulation(; output_root::AbstractString=OUTPUT_ROOT,
                         run_id::AbstractString=safe_timestamp())
 
-    reset_simulation!()
-
-    global Parameters = load_csv_parameters(PARAMETER_FILE)
-
-    apply_parameters!()
-
-    initialize_simulation!()
-    Make_Directory(output_root=output_root, run_id=run_id)
-    Movement()
-
-    return directory
-end
-
-
-"""
-function run_simulation(; output_root::AbstractString=OUTPUT_ROOT, run_id::AbstractString=safe_timestamp())
-   
     reset_simulation!()
 
     global Parameters = load_csv_parameters(PARAMETER_FILE)
