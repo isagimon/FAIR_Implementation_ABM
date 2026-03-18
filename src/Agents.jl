@@ -90,19 +90,20 @@ falls within the implemented range.
 function validate_parameters!(params::Dict)
     required_keys = [
         "Directory",
-        "Timesteps",
-        "Initial_Number_Native_Monomers",
-        "Initial_Number_AggregateProne_Monomers",
-        "Probability_Native_Movement",
-        "Probability_Conformational_Change",
-        "Probability_AggregateProne_Movement",
-        "Probability_AggregateProne_Aggregation",
-        "Probability_Oligomer_Movement",
-        "Probability_Oligomer_Formation",
-        "Probability_Fibril_Movement",
-        "Probability_Fibril_Formation",
-        "Probability_Fibril_Growth",
-        "Obstacle_Radius"
+        "Lattice_Size",
+        "MAX_NumberMovements",
+        "Max_NumberMonomers_Native",
+        "Max_NumberMonomers_AggregateProne",
+        "Spheres?",
+        "Obstacle_Radius",
+        "Crowder_Concentration_Spheres",
+        "Native_to_AggregateProne",
+        "AggregateProne_to_Native",
+        "Oligomer_Formation",
+        "Oligomer_Dissociation_rate",
+        "Fibril_Formation",
+        "Fibril_Growth",
+        "Probability_of_Oligomer_Removal"
     ]
 
     for key in required_keys
@@ -112,15 +113,14 @@ function validate_parameters!(params::Dict)
     end
 
     probability_keys = [
-        "Probability_Native_Movement",
-        "Probability_Conformational_Change",
-        "Probability_AggregateProne_Movement",
-        "Probability_AggregateProne_Aggregation",
-        "Probability_Oligomer_Movement",
-        "Probability_Oligomer_Formation",
-        "Probability_Fibril_Movement",
-        "Probability_Fibril_Formation",
-        "Probability_Fibril_Growth"
+        "Crowder_Concentration_Spheres",
+        "Native_to_AggregateProne",
+        "AggregateProne_to_Native",
+        "Oligomer_Formation",
+        "Oligomer_Dissociation_rate",
+        "Fibril_Formation",
+        "Fibril_Growth",
+        "Probability_of_Oligomer_Removal"
     ]
 
     for key in probability_keys
@@ -131,9 +131,10 @@ function validate_parameters!(params::Dict)
     end
 
     integer_nonnegative_keys = [
-        "Timesteps",
-        "Initial_Number_Native_Monomers",
-        "Initial_Number_AggregateProne_Monomers",
+        "Lattice_Size",
+        "MAX_NumberMovements",
+        "Max_NumberMonomers_Native",
+        "Max_NumberMonomers_AggregateProne",
         "Obstacle_Radius"
     ]
 

@@ -13,7 +13,6 @@ Repository hygiene and portability improvements (no scientific/algorithmic inten
   - simulations no longer auto-run when source files are included
 - Implemented a filesystem-safe timestamp format for run directories (Windows compatible).
 - Added provenance outputs per run:
-  - `Input_Parameters_used.csv`
   - `Simulation_Information.csv`
 - Added a minimal test suite (`test/runtests.jl`).
 - Updated documentation (`README.md`, `USAGE.md`) and metadata (`Project.toml`) for internal consistency.

@@ -217,11 +217,6 @@ function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
     global directory = abspath(joinpath(output_root, "Simulation_$timestamp"))
     mkpath(directory)
 
-    if isdefined(Main, :PARAMETER_FILE)
-        param_copy_path = joinpath(directory, "Input_Parameters_used.csv")
-        cp(PARAMETER_FILE, param_copy_path; force=true)
-    end
-
     # Record input parameters for this run
     Input_Parameters()
 

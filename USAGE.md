@@ -79,7 +79,6 @@ You may override inputs without editing files by setting environment variables *
 Each simulation run writes its outputs into a run directory:
 
 - `Simulation_Information.csv` — key run parameters (for provenance)
-- `Input_Parameters_used.csv` — exact parameter CSV copied into the run directory (for provenance)
 - `Oligomer_and_Aggregate_Count_Results.csv`
 - `Native_and_AggregateProne_Count_Results.csv`
 - `Oligomers_Cleared.csv`

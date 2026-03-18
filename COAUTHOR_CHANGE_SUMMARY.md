@@ -16,7 +16,6 @@ This document summarizes the publication-readiness updates made to the `FAIR_Imp
 - Updated `Project.toml` metadata
 - Regenerated `Manifest.toml` after dependency cleanup
 - Added provenance outputs for each run:
-  - `Input_Parameters_used.csv`
   - `Simulation_Information.csv`
 
 ### Documentation and metadata consistency

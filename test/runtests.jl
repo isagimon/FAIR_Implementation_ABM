@@ -9,7 +9,6 @@ using FAIR_Implementation_ABM
     mktempdir() do tmp
         run_dir = Make_Directory(output_root=tmp, run_id="TEST_RUN")
         @test isdir(run_dir)
-        @test isfile(joinpath(run_dir, "Input_Parameters_used.csv"))
         @test isfile(joinpath(run_dir, "Simulation_Information.csv"))
     end
 end
