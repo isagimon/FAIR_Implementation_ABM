@@ -4,15 +4,15 @@ title: "FAIR_Implementation_ABM"
 version: "v1.2.0"
 doi: 10.5281/zenodo.15230587
 date-released: 2025-04-16
+abstract: "FAIR_Implementation_ABM is a Julia-based agent-based model for simulating protein aggregation dynamics under intracellular-like conditions, with an emphasis on reproducibility and FAIR software practices."
 
 authors:
-  - family-names: Gimon
-    given-names: Isabella
   - family-names: Schnell
     given-names: Santiago
   - family-names: Sandefur
     given-names: Conner
+  - family-names: Gimón
+    given-names: Isabella
 
 license: Apache-2.0
 repository-code: https://github.com/isagimon/FAIR_Implementation_ABM
-

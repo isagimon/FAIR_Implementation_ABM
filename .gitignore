@@ -1,2 +1,30 @@
+# OS files
 .DS_Store
-**/.DS_Store
+Thumbs.db
+
+# Julia artifacts
+Manifest.toml
+compiled/
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+# Documentation build output
+docs/build/
+build/
+
+# Simulation and analysis outputs
+Data_Collection/*
+!Data_Collection/.gitkeep
+!Data_Collection/Compare_Simulations/
+Data_Collection/Compare_Simulations/*
+!Data_Collection/Compare_Simulations/.gitkeep
+
+# Editor and IDE directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

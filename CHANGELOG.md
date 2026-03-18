@@ -15,6 +15,5 @@ Repository hygiene and portability improvements (no scientific/algorithmic inten
 - Added provenance outputs per run:
   - `Input_Parameters_used.csv`
   - `Simulation_Information.csv`
-- Added a minimal test suite (`test/runtests.jl`) and a GitHub Actions workflow (`.github/workflows/ci.yml`).
-- Updated documentation (`README.md`, `USAGE.md`) and metadata (`.zenodo.json`, `Project.toml`) for internal consistency.
-
+- Added a minimal test suite (`test/runtests.jl`).
+- Updated documentation (`README.md`, `USAGE.md`) and metadata (`Project.toml`) for internal consistency.
