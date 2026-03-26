@@ -1,4 +1,4 @@
 Input_Parameters,Values,Instructions
 Directory,Data_Collection,Directory where simulation folders are found
 Total_Timesteps,1000,The total number of timesteps in each simulation folder
-Total_Number_Monomers,30,The total number of Native and AggregateProne monomers
+Total_Number_Monomers,35,The total number of Native and AggregateProne monomers

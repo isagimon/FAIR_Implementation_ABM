@@ -72,11 +72,17 @@ function apply_parameters!()
     global Max_NumberMonomers_Native         = Int(Parameters["Max_NumberMonomers_Native"])
     global Max_NumberMonomers_AggregateProne = Int(Parameters["Max_NumberMonomers_AggregateProne"])
 
-    # --- Output root directory: ALWAYS repo/Data_Collection ---
-    local data_root = joinpath(@__DIR__, "..", "Data_Collection")
-    mkpath(data_root)
-    global OUTPUT_ROOT = abspath(get(ENV, "FAIR_ABM_OUTPUT_DIR", data_root))
-    global Directory   = OUTPUT_ROOT
+   # --- Output root default (can later be overridden by ENV or run_simulation output_root) ---
+local data_root = joinpath(@__DIR__, "..", "Data_Collection")
+mkpath(data_root)
+
+if haskey(Parameters, "Directory") && !isempty(strip(String(Parameters["Directory"])))
+    global OUTPUT_ROOT = abspath(String(Parameters["Directory"]))
+else
+    global OUTPUT_ROOT = abspath(data_root)
+end
+
+global Directory = OUTPUT_ROOT
 
     # --- Derived parameter ---
     global max_fibril_size = Int(Max_NumberMonomers_AggregateProne + Max_NumberMonomers_Native)
@@ -175,20 +181,28 @@ to `data_root` to avoid writing run folders into the repo root.
 """
 
 function Resolve_Output_Directory(output_root, repo_root, data_root)
-    if haskey(ENV, "FAIR_ABM_OUTPUT_DIR") && !isempty(strip(ENV["FAIR_ABM_OUTPUT_DIR"]))
-        candidate = abspath(ENV["FAIR_ABM_OUTPUT_DIR"])
-        return candidate == repo_root ? data_root : candidate
-    elseif output_root !== nothing
-        candidate = abspath(String(output_root))
-        return candidate == repo_root ? data_root : candidate
-    elseif haskey(Initial_Conditions, "Directory") && !isempty(strip(String(Initial_Conditions["Directory"])))
-        candidate = abspath(String(Initial_Conditions["Directory"]))
-        return candidate == repo_root ? data_root : candidate
-    else
-        return data_root
+    # 1. Environment variable wins
+    env_out = get(ENV, "FAIR_ABM_OUTPUT_DIR", "")
+    if !isempty(env_out)
+        return abspath(env_out)
     end
-end
 
+    # 2. Explicit function argument wins if ENV is not set
+    if output_root !== nothing && !isempty(strip(String(output_root)))
+        return abspath(String(output_root))
+    end
+
+    # 3. Use Directory from the loaded parameter CSV if present
+    if @isdefined(Parameters) && haskey(Parameters, "Directory")
+        param_dir = String(Parameters["Directory"])
+        if !isempty(strip(param_dir))
+            return abspath(param_dir)
+        end
+    end
+
+    # 4. Fallback to repo/Data_Collection
+    return abspath(data_root)
+end
 """
 Make_Directory()
 
@@ -991,22 +1005,23 @@ function Randomly_Remove_Oligomer()
     Random_Coordinate = rand(All_Oligomers)
     _, Unique_Number = Locations_and_States_Dict[Random_Coordinate]
 
-    coords = collect(keys(Locations_and_States_Dict))
+    coords_to_remove = Vector{typeof(Random_Coordinate)}()
 
-    removed_count = Threads.Atomic{Int}(0)
-
-    @threads for i in 1:length(coords)
-        coord = coords[i]
-        _, unique_num = Locations_and_States_Dict[coord]
+    for (coord, (_, unique_num)) in Locations_and_States_Dict
         if unique_num == Unique_Number
-            Update_Locations_States(coord, 0, 0)
-            Threads.atomic_add!(removed_count, 1)
+            push!(coords_to_remove, coord)
         end
     end
 
-    Remove_Center_of_Mass_Info(Unique_Number)
+    removed_count = 0
 
-    Track_Cleared_Monomers(removed_count[])
+    for coord in coords_to_remove
+        Update_Locations_States(coord, 0, 0)
+        removed_count += 1
+    end
+
+    Remove_Center_of_Mass_Info(Unique_Number)
+    Track_Cleared_Monomers(removed_count)
 end
 
 """
