@@ -201,12 +201,10 @@ Creates the directory structure for saving simulation results and calls Input_Pa
 - `Input_Parameters`
 """
 function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
-                        run_id::AbstractString=safe_timestamp())
+                        run_id::AbstractString=safe_timestamp(),
+                        parameter_file::Union{Nothing,AbstractString}=nothing)
 
-    # Absolute repo root (FAIR_Implementation_ABM/)
     local repo_root = abspath(joinpath(@__DIR__, ".."))
-
-    # Absolute Data_Collection path (FAIR_Implementation_ABM/Data_Collection/)
     local data_root = abspath(joinpath(repo_root, "Data_Collection"))
     mkpath(data_root)
 
@@ -217,7 +215,11 @@ function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
     global directory = abspath(joinpath(output_root, "Simulation_$timestamp"))
     mkpath(directory)
 
-    # Record input parameters for this run
+    if parameter_file !== nothing
+        param_copy_path = joinpath(directory, "Input_Parameters_used.csv")
+        cp(parameter_file, param_copy_path; force=true)
+    end
+
     Input_Parameters()
 
     return directory
@@ -4190,7 +4192,7 @@ function run_simulation(; output_root::AbstractString=OUTPUT_ROOT,
     apply_parameters!()
 
     initialize_simulation!()
-    Make_Directory(output_root=output_root, run_id=run_id)
+    Make_Directory(output_root=output_root, run_id=run_id, parameter_file=PARAMETER_FILE)
     Movement()
 
     return directory

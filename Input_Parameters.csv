@@ -11,6 +11,6 @@ Oligomer_Formation,0.05,Probabilities have to be between 0 and 1 (A + A -> O)
 Oligomer_Dissociation_rate,0.005,Probabilities have to be between 0 and 1 (O <- A + A)
 Fibril_Formation,0.1,Probabilities have to be between 0 and 1 (O + A -> F)
 Fibril_Growth,0.9,Probabilities have to be between 0 and 1 (F + A -> Fn)
-Probability_of_Oligomer_Removal,0,Probabilities have to be between 0 and 1
+Probability_of_Oligomer_Removal,0.05,Probabilities have to be between 0 and 1
 MAX_NumberMovements,1000,Number of Timesteps
 Directory,Data_Collection,Be sure that the directory saves the data here: …. /FAIR_Implementation_ABM/Data_Collection

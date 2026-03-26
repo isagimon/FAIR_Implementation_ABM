@@ -20,6 +20,8 @@ This model investigates how different environmental and molecular parameters—s
 ```@autodocs
 Modules = [FAIR_Implementation_ABM]
 
+```
+
 ## Model Parameters
 
 This section summarizes the main parameters used to control the agent-based model of protein aggregation.
