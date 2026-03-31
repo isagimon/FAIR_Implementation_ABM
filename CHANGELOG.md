@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.1
+
+- Updated release metadata for the public Zenodo/GitHub release.
+- Synchronized repository versioning across `Project.toml`, `CITATION.cff`, and `.zenodo.json`.
+- Prepared the repository for archival release on Zenodo as version 2.1.1.
+
 ## 1.2.0 (publication-ready snapshot)
 
 Repository hygiene and portability improvements (no scientific/algorithmic intent changed):
