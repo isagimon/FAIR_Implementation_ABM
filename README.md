@@ -1,5 +1,7 @@
 # 🧬 Protein Aggregation Simulation (FAIR_Implementation_ABM)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19353711.svg)](https://doi.org/10.5281/zenodo.19353711)
+
 This repository provides a Julia implementation of an agent-based model (ABM) for protein aggregation on a 3D FCC lattice. The model captures stochastic monomer movement, conformational switching (Native ↔ AggregateProne), oligomer formation/dissociation, fibril/aggregate growth, macromolecular crowding (optional static spherical obstacles), and an optional oligomer clearance mechanism implemented as stochastic removal.
 
 ---

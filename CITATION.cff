@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "FAIR_Implementation_ABM"
 version: "v2.1.1"
-doi: 10.5281/zenodo.15230587
+doi: 10.5281/zenodo.19353711
 date-released: 2026-03-31
 abstract: "FAIR_Implementation_ABM is a Julia-based agent-based model for simulating protein aggregation dynamics under intracellular-like conditions, with an emphasis on reproducibility and FAIR software practices."
 
