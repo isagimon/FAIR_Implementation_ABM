@@ -1,18 +1,18 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "FAIR_Implementation_ABM"
-version: "v2.1.1"
-doi: 10.5281/zenodo.19353711
-date-released: 2026-03-31
+version: "v2.2.2"
+doi: 10.5281/zenodo.15230586
+date-released: 2026-04-02
 abstract: "FAIR_Implementation_ABM is a Julia-based agent-based model for simulating protein aggregation dynamics under intracellular-like conditions, with an emphasis on reproducibility and FAIR software practices."
 
 authors:
-  - family-names: Schnell
-    given-names: Santiago
-  - family-names: Sandefur
-    given-names: Conner
   - family-names: Gimón
     given-names: Isabella
+  - family-names: Sandefur
+    given-names: Conner
+  - family-names: Schnell
+    given-names: Santiago
 
 license: Apache-2.0
 repository-code: https://github.com/isagimon/FAIR_Implementation_ABM

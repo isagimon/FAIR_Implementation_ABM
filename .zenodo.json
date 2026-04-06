@@ -1,15 +1,15 @@
 {
   "title": "FAIR_Implementation_ABM",
-  "version": "2.1.1",
+  "version": "2.2.2",
   "creators": [
     {
-      "name": "Schnell, Santiago"
+      "name": "Gimón, Isabella"
     },
     {
       "name": "Sandefur, Conner"
     },
     {
-      "name": "Gimón, Isabella"
+      "name": "Schnell, Santiago"
     }
   ],
   "description": "FAIR_Implementation_ABM is a Julia-based agent-based model for simulating protein aggregation dynamics under intracellular-like conditions, with an emphasis on reproducibility and FAIR software practices.",

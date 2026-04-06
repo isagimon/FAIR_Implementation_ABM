@@ -63,7 +63,7 @@ Edit `Input_Parameters.csv` to change:
   - `Spheres?` (TRUE/FALSE)
   - `Obstacle_Radius`
   - `Crowder_Concentration_Spheres`
-- `Directory` — output root directory (recommended to keep this **relative**, default: `Data_Collection`)
+- `Directory` — output root directory (optional)
 
 ### Portable overrides (optional)
 
@@ -72,6 +72,16 @@ You may override inputs without editing files by setting environment variables *
 - `FAIR_ABM_PARAMETER_FILE` — alternate parameter CSV path
 - `FAIR_ABM_OUTPUT_DIR` — alternate output directory root
 
+## Movement options
+
+The model samples from 18 FCC nearest-neighbor movement directions plus an explicit `"None"` option, which represents remaining in place for a timestep.
+
+This means a monomer may:
+- move to one of 18 neighboring FCC lattice positions, or
+- remain in place when `"None"` is sampled
+
+The `"None"` option has a probability of 1/19 under uniform sampling.
+
 ---
 
 ## Output files
@@ -79,6 +89,7 @@ You may override inputs without editing files by setting environment variables *
 Each simulation run writes its outputs into a run directory:
 
 - `Simulation_Information.csv` — key run parameters (for provenance)
+- `Input_Parameters_used.csv` — exact copy of the parameter file used for the run
 - `Oligomer_and_Aggregate_Count_Results.csv`
 - `Native_and_AggregateProne_Count_Results.csv`
 - `Oligomers_Cleared.csv`
@@ -100,13 +111,26 @@ Run the full pipeline:
 
 ```bash
 julia Run_All_Analysis_Scripts.jl
-```
+
 
 Analysis parameters are read from `Input_Parameters_Analysis.csv` (notably `Directory` and `Total_Timesteps`).
 
 ---
 
-## Troubleshooting
+## Generating publication-quality figures (Figures 3, 4, and 5)
 
-- If outputs are not created, confirm `Directory` in `Input_Parameters.csv` is writable.
-- If running on Windows, ensure output directories do not contain `:` characters. (This repository uses a Windows-safe timestamp format by default.)
+Publication-quality figure generation is supported through the Python scripts in `Analysis/`.
+
+Available scripts:
+- `Analysis/Plot_Fig_3_publication.py`
+- `Analysis/Plot_Fig_4_publication.py`
+- `Analysis/Plot_Fig_5_publication.py`
+
+These scripts use Python dependencies pinned in:
+
+- `Analysis/requirements.txt`
+
+Install them with:
+
+```bash
+pip install -r Analysis/requirements.txt
