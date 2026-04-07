@@ -1,0 +1,16 @@
+name = "FAIR_Implementation_ABM_Analysis"
+uuid = "d6dd464d-61a5-4cb7-be83-0038a125dac8"
+authors = ["Santiago Schnell", "Conner Sandefur", "Isabella Gimón"]
+version = "1.0.0"
+
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+
+[compat]
+julia = "1.10"
+CSV = "0.10"
+DataFrames = "1"
+Plots = "1"

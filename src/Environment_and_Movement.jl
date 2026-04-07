@@ -2,7 +2,6 @@ using Random
 using DataFrames
 using CSV
 using Dates
-using Profile
 using Base.Threads
 
 """
@@ -4197,7 +4196,7 @@ the lattice, creates the output directory, and runs the full simulation.
 - `Make_Directory`
 - `Movement`
 """
-function run_simulation(; output_root::AbstractString=OUTPUT_ROOT,
+function run_simulation(; output_root::Union{Nothing,AbstractString}=nothing,
                         run_id::AbstractString=safe_timestamp())
 
     reset_simulation!()

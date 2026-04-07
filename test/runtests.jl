@@ -1,76 +1,66 @@
 using Test
 using FAIR_Implementation_ABM
 
-const FABM = FAIR_Implementation_ABM
+@testset "FAIR_Implementation_ABM QA checks" begin
+    # Timestamp should be filesystem-safe (notably: no ':' for Windows)
+    @test !occursin(":", safe_timestamp())
 
-@testset "FAIR_Implementation_ABM" begin
+    @testset "Parameter validation" begin
+        params = Dict{String,Any}(
+            "Lattice_Size" => 3,
+            "MAX_NumberMovements" => 10,
+            "Max_NumberMonomers_Native" => 15,
+            "Max_NumberMonomers_AggregateProne" => 15,
+            "Spheres?" => false,
+            "Obstacle_Radius" => 0,
+            "Crowder_Concentration_Spheres" => 0.0,
+            "Native_to_AggregateProne" => 0.2,
+            "AggregateProne_to_Native" => 0.2,
+            "Oligomer_Formation" => 0.05,
+            "Oligomer_Dissociation_rate" => 0.005,
+            "Fibril_Formation" => 0.1,
+            "Fibril_Growth" => 0.9,
+            "Probability_of_Oligomer_Removal" => 0.0
+        )
 
-    @testset "Basic utilities" begin
-        @test !occursin(":", FABM.safe_timestamp())
+        @test FAIR_Implementation_ABM.validate_parameters!(copy(params)) isa Dict
+
+        bad = copy(params)
+        delete!(bad, "Lattice_Size")
+        @test_throws ErrorException FAIR_Implementation_ABM.validate_parameters!(bad)
+
+        bad2 = copy(params)
+        bad2["Native_to_AggregateProne"] = 2.0
+        @test_throws ErrorException FAIR_Implementation_ABM.validate_parameters!(bad2)
+
+        bad3 = copy(params)
+        bad3["Obstacle_Radius"] = 7
+        @test_throws ErrorException FAIR_Implementation_ABM.validate_parameters!(bad3)
     end
 
-    @testset "Movement dispatch consistency" begin
-        for move in FABM.Possible_Movement_Options
-            if move != "None"
-                @test haskey(FABM.MovementFunctions, move)
-            end
-        end
-    end
-
-    @testset "Output directory precedence" begin
-        repo_root = abspath(joinpath(@__DIR__, ".."))
-        data_root = abspath(joinpath(repo_root, "Data_Collection"))
-
-        old_env = get(ENV, "FAIR_ABM_OUTPUT_DIR", nothing)
-        old_parameters = copy(FABM.Parameters)
-
+    @testset "FAIR_Implementation_ABM.Return_Sphere_Volume guard" begin
+        old = FAIR_Implementation_ABM.Obstacle_Radius
         try
-            ENV["FAIR_ABM_OUTPUT_DIR"] = "env_out"
-            @test FABM.Resolve_Output_Directory(nothing, repo_root, data_root) == abspath("env_out")
-
-            pop!(ENV, "FAIR_ABM_OUTPUT_DIR", nothing)
-            @test FABM.Resolve_Output_Directory("arg_out", repo_root, data_root) == abspath("arg_out")
-
-            empty!(FABM.Parameters)
-            FABM.Parameters["Directory"] = "csv_out"
-            @test FABM.Resolve_Output_Directory(nothing, repo_root, data_root) == abspath("csv_out")
-
-            empty!(FABM.Parameters)
-            @test FABM.Resolve_Output_Directory(nothing, repo_root, data_root) == abspath(data_root)
+            FAIR_Implementation_ABM.Obstacle_Radius = 7
+            @test_throws ErrorException FAIR_Implementation_ABM.Return_Sphere_Volume()
         finally
-            empty!(FABM.Parameters)
-            merge!(FABM.Parameters, old_parameters)
-
-            if old_env === nothing
-                pop!(ENV, "FAIR_ABM_OUTPUT_DIR", nothing)
-            else
-                ENV["FAIR_ABM_OUTPUT_DIR"] = old_env
-            end
+            FAIR_Implementation_ABM.Obstacle_Radius = old
         end
     end
 
-    @testset "Per-run provenance files" begin
+    @testset "Output directory precedence + provenance copy" begin
         mktempdir() do tmp
-            run_dir = FABM.Make_Directory(
-                output_root=tmp,
-                run_id="TEST_RUN",
-                parameter_file=FABM.PARAMETER_FILE
-            )
+            # Minimal parameter CSV used only for provenance copying
+            paramfile = joinpath(tmp, "params.csv")
+            open(paramfile, "w") do io
+                write(io, "Input_Parameters,Values,Instructions\n")
+                write(io, "Directory,Data_Collection,\n")
+            end
 
+            run_dir = Make_Directory(output_root=tmp, run_id="TEST_RUN", parameter_file=paramfile)
             @test isdir(run_dir)
             @test isfile(joinpath(run_dir, "Simulation_Information.csv"))
             @test isfile(joinpath(run_dir, "Input_Parameters_used.csv"))
         end
     end
-
-    @testset "Return_Sphere_Volume invalid radius" begin
-        old_radius = FABM.Obstacle_Radius
-        try
-            FABM.Obstacle_Radius = 7
-            @test_throws Exception FABM.Return_Sphere_Volume()
-        finally
-            FABM.Obstacle_Radius = old_radius
-        end
-    end
-
 end

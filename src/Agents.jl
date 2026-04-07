@@ -89,7 +89,6 @@ falls within the implemented range.
 
 function validate_parameters!(params::Dict)
     required_keys = [
-        "Directory",
         "Lattice_Size",
         "MAX_NumberMovements",
         "Max_NumberMonomers_Native",

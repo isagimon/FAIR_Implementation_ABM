@@ -1,0 +1,12 @@
+# Python dependencies for publication-quality figure generation
+# (Plot_Fig_3_publication.py, Plot_Fig_4_publication.py, and Plot_Fig_5_publication.py)
+#
+# Install with:  pip install -r requirements.txt
+#
+# Exact versions used to generate the submitted manuscript figures.
+# Python 3.12.3 on Ubuntu 24.04.
+
+matplotlib==3.10.8
+numpy==2.4.2
+pandas==3.0.1
+Pillow==12.1.1

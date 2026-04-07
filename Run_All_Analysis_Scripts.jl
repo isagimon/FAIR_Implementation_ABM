@@ -9,7 +9,7 @@
 #
 
 using Pkg
-Pkg.activate(@__DIR__)
+Pkg.activate(joinpath(@__DIR__, "Analysis"))
 Pkg.instantiate()
 
 using CSV
