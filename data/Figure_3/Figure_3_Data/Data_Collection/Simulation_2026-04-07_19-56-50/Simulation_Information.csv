@@ -1,0 +1,2 @@
+Run_ID,Lattice_Size,Number_Native_Monomers,Number_AggregateProne_Monomers,Timesteps,P_Native_to_AggregateProne,P_AggregateProne_to_Native,P_Oligomer_Formation,P_Oligomer_Dissociation,P_Fibril_Formation,P_Fibril_Growth,P_Oligomer_Removal,Crowders_Enabled,Obstacle_Radius,Crowder_Concentration_Spheres
+2026-04-07_19-56-50,3,15,15,1000,0.2,0.2,0.05,0.005,0.1,0.9,0.0,false,0,0.0
