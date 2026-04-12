@@ -17,9 +17,9 @@ Implements FAIR principles:
 - **Reusable**: Modular code, consistent global state, reproducible runs.
 
 Authors: Santiago Schnell, Conner Sandefur, Isabella Gimón
-Creation Date: [Date]
-Last Modified: [Date]
-Dependencies: Random, Plots, DataFrames, CSV, Dates, Profile, Base.Threads, Agents.jl
+Creation Date: 2026-03-27
+Last Modified: 2026-03-27
+Dependencies: Random, DataFrames, CSV, Dates, Base.Threads, Agents.jl
 License: http://www.apache.org/licenses/LICENSE-2.0
 """
 
@@ -71,17 +71,32 @@ function apply_parameters!()
     global Max_NumberMonomers_Native         = Int(Parameters["Max_NumberMonomers_Native"])
     global Max_NumberMonomers_AggregateProne = Int(Parameters["Max_NumberMonomers_AggregateProne"])
 
-   # --- Output root default (can later be overridden by ENV or run_simulation output_root) ---
-local data_root = joinpath(@__DIR__, "..", "Data_Collection")
-mkpath(data_root)
+    # --- Output root directory precedence ---
+    # Priority:
+    #   1) ENV["FAIR_ABM_OUTPUT_DIR"] (if set)
+    #   2) Parameters["Directory"] (if provided; relative paths resolved relative to repo root)
+    #   3) repo/Data_Collection (default)
+    local repo_root = abspath(joinpath(@__DIR__, ".."))
+    local data_root = abspath(joinpath(repo_root, "Data_Collection"))
+    mkpath(data_root)
 
-if haskey(Parameters, "Directory") && !isempty(strip(String(Parameters["Directory"])))
-    global OUTPUT_ROOT = abspath(String(Parameters["Directory"]))
-else
-    global OUTPUT_ROOT = abspath(data_root)
-end
+    local candidate::String
+    if haskey(ENV, "FAIR_ABM_OUTPUT_DIR") && !isempty(strip(ENV["FAIR_ABM_OUTPUT_DIR"]))
+        local env_dir = strip(ENV["FAIR_ABM_OUTPUT_DIR"])
+        candidate = isabspath(env_dir) ? abspath(env_dir) : abspath(joinpath(repo_root, env_dir))
+    elseif haskey(Parameters, "Directory") && !isempty(strip(String(Parameters["Directory"])))
+        local csv_dir = strip(String(Parameters["Directory"]))
+        candidate = isabspath(csv_dir) ? abspath(csv_dir) : abspath(joinpath(repo_root, csv_dir))
+    else
+        candidate = data_root
+    end
 
-global Directory = OUTPUT_ROOT
+    if candidate == repo_root
+        candidate = data_root
+    end
+
+    global OUTPUT_ROOT = candidate
+    global Directory   = OUTPUT_ROOT
 
     # --- Derived parameter ---
     global max_fibril_size = Int(Max_NumberMonomers_AggregateProne + Max_NumberMonomers_Native)
@@ -180,28 +195,28 @@ to `data_root` to avoid writing run folders into the repo root.
 """
 
 function Resolve_Output_Directory(output_root, repo_root, data_root)
-    # 1. Environment variable wins
-    env_out = get(ENV, "FAIR_ABM_OUTPUT_DIR", "")
-    if !isempty(env_out)
-        return abspath(env_out)
+    # Priority:
+    #   1) ENV["FAIR_ABM_OUTPUT_DIR"]
+    #   2) explicit output_root kwarg
+    #   3) Parameters["Directory"]
+    #   4) repo/Data_Collection (data_root)
+    if haskey(ENV, "FAIR_ABM_OUTPUT_DIR") && !isempty(strip(ENV["FAIR_ABM_OUTPUT_DIR"]))
+        local env_dir = strip(ENV["FAIR_ABM_OUTPUT_DIR"])
+        candidate = isabspath(env_dir) ? abspath(env_dir) : abspath(joinpath(repo_root, env_dir))
+        return candidate == repo_root ? data_root : candidate
+    elseif output_root !== nothing
+        local out = strip(String(output_root))
+        candidate = isabspath(out) ? abspath(out) : abspath(joinpath(repo_root, out))
+        return candidate == repo_root ? data_root : candidate
+    elseif haskey(Parameters, "Directory") && !isempty(strip(String(Parameters["Directory"])))
+        local csv_dir = strip(String(Parameters["Directory"]))
+        candidate = isabspath(csv_dir) ? abspath(csv_dir) : abspath(joinpath(repo_root, csv_dir))
+        return candidate == repo_root ? data_root : candidate
+    else
+        return data_root
     end
-
-    # 2. Explicit function argument wins if ENV is not set
-    if output_root !== nothing && !isempty(strip(String(output_root)))
-        return abspath(String(output_root))
-    end
-
-    # 3. Use Directory from the loaded parameter CSV if present
-    if @isdefined(Parameters) && haskey(Parameters, "Directory")
-        param_dir = String(Parameters["Directory"])
-        if !isempty(strip(param_dir))
-            return abspath(param_dir)
-        end
-    end
-
-    # 4. Fallback to repo/Data_Collection
-    return abspath(data_root)
 end
+
 """
 Make_Directory()
 
@@ -215,9 +230,12 @@ Creates the directory structure for saving simulation results and calls Input_Pa
 """
 function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
                         run_id::AbstractString=safe_timestamp(),
-                        parameter_file::Union{Nothing,AbstractString}=nothing)
+                        parameter_file::Union{Nothing,AbstractString}=PARAMETER_FILE)
 
+    # Absolute repo root (FAIR_Implementation_ABM/)
     local repo_root = abspath(joinpath(@__DIR__, ".."))
+
+    # Absolute Data_Collection path (FAIR_Implementation_ABM/Data_Collection/)
     local data_root = abspath(joinpath(repo_root, "Data_Collection"))
     mkpath(data_root)
 
@@ -228,11 +246,12 @@ function Make_Directory(; output_root::Union{Nothing,AbstractString}=nothing,
     global directory = abspath(joinpath(output_root, "Simulation_$timestamp"))
     mkpath(directory)
 
-    if parameter_file !== nothing
-        param_copy_path = joinpath(directory, "Input_Parameters_used.csv")
-        cp(parameter_file, param_copy_path; force=true)
+    # Store a run-local copy of the parameter CSV for full provenance
+    if parameter_file !== nothing && isfile(String(parameter_file))
+        cp(String(parameter_file), joinpath(directory, "Input_Parameters_used.csv"); force=true)
     end
 
+    # Record key input parameters for this run
     Input_Parameters()
 
     return directory
@@ -1002,25 +1021,26 @@ function Randomly_Remove_Oligomer()
     end
 
     Random_Coordinate = rand(All_Oligomers)
-    _, Unique_Number = Locations_and_States_Dict[Random_Coordinate]
 
-    coords_to_remove = Vector{typeof(Random_Coordinate)}()
-
-    for (coord, (_, unique_num)) in Locations_and_States_Dict
-        if unique_num == Unique_Number
-            push!(coords_to_remove, coord)
+    # Collect all coordinates belonging to the chosen oligomer under a lock
+    Unique_Number = 0
+    coords_to_clear = Tuple{Float64, Float64, Float64}[]
+    lock(dict_lock) do
+        _, Unique_Number = Locations_and_States_Dict[Random_Coordinate]
+        for (coord, (_, unique_num)) in Locations_and_States_Dict
+            if unique_num == Unique_Number
+                push!(coords_to_clear, coord)
+            end
         end
     end
 
-    removed_count = 0
-
-    for coord in coords_to_remove
+    # Clear oligomer coordinates (writes are locked in Update_Locations_States)
+    for coord in coords_to_clear
         Update_Locations_States(coord, 0, 0)
-        removed_count += 1
     end
 
     Remove_Center_of_Mass_Info(Unique_Number)
-    Track_Cleared_Monomers(removed_count)
+    Track_Cleared_Monomers(length(coords_to_clear))
 end
 
 """
@@ -4206,7 +4226,7 @@ function run_simulation(; output_root::Union{Nothing,AbstractString}=nothing,
     apply_parameters!()
 
     initialize_simulation!()
-    Make_Directory(output_root=output_root, run_id=run_id, parameter_file=PARAMETER_FILE)
+    Make_Directory(output_root=output_root, run_id=run_id)
     Movement()
 
     return directory

@@ -20,7 +20,8 @@ using FAIR_Implementation_ABM
             "Oligomer_Dissociation_rate" => 0.005,
             "Fibril_Formation" => 0.1,
             "Fibril_Growth" => 0.9,
-            "Probability_of_Oligomer_Removal" => 0.0
+            "Probability_of_Oligomer_Removal" => 0.0,
+	    "Directory" => "Data_Collection"
         )
 
         @test FAIR_Implementation_ABM.validate_parameters!(copy(params)) isa Dict
