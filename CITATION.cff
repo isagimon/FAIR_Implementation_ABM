@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 title: "FAIR_Implementation_ABM"
 version: "v2.2.2"
 doi: 10.5281/zenodo.15230586
-date-released: 2026-04-02
+date-released: 2026-04-24
 abstract: "FAIR_Implementation_ABM is a Julia-based agent-based model for simulating protein aggregation dynamics under intracellular-like conditions, with an emphasis on reproducibility and FAIR software practices."
 
 authors:
