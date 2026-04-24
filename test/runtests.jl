@@ -21,7 +21,7 @@ using FAIR_Implementation_ABM
             "Fibril_Formation" => 0.1,
             "Fibril_Growth" => 0.9,
             "Probability_of_Oligomer_Removal" => 0.0,
-	    "Directory" => "Data_Collection"
+            "Directory" => "Data_Collection",
         )
 
         @test FAIR_Implementation_ABM.validate_parameters!(copy(params)) isa Dict
