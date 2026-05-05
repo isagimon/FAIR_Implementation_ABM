@@ -1,7 +1,7 @@
 name = "FAIR_Implementation_ABM"
 uuid = "20a1e891-e519-491e-ac5b-18119a82520a"
 authors = ["Isabella Gimón", "Conner Sandefur", "Santiago Schnell"]
-version = "2.2.2"
+version = "2.2.3"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"

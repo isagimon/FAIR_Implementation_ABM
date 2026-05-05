@@ -7,6 +7,12 @@ This project is archived on Zenodo. The concept DOI
 resolves to the latest version. Individual version DOIs are listed below.
 
 ---
+## v2.2.3 - Figure 5 Runtime Data Update
+
+**Zenodo DOI:** [10.5281/zenodo.20032424](https://doi.org/10.5281/zenodo.20032424)
+
+### Changed
+- Updated Figure 5 runtime benchmark data and associated repository files for consistency.
 
 ## [v2.2.2] — 2026-04-02
 
@@ -149,7 +155,7 @@ v2.1.1.
 
 **Zenodo DOI:** [10.5281/zenodo.19353711](https://doi.org/10.5281/zenodo.19353711)
 
-*v2.2.2 is the authoritative public release and supersedes v2.1.1.*
+*v2.2.3 is the authoritative public release and supersedes v2.2.2.*
 
 This release covered publication-readiness and repository-quality improvements
 made between the initial paper-submission snapshot (v1.2.0) and the public
