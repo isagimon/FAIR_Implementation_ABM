@@ -234,6 +234,14 @@ these are documented explicitly below.
   without running a full simulation:
   - `example_outputs/Simulation_Demo_Run/` — simulation CSVs.
   - `example_outputs/Analysis_Demo_Run/` — analysis CSVs and plots.
+ 
+  - Added the May 26, 2026 reproduction package for manuscript Figures 3–5 as
+  a GitHub Release asset.
+  - Documented that the reproduction workflow uses repository version `v2.2.3`
+  at commit `a7801f6d13fe9354a46e7958dc5c12da3c77f3dd`.
+  - Preserved the input parameters, execution wrappers, provenance records,
+  logs, raw outputs, and processed results associated with the reproduction
+  runs.
 
 ### Changed
 
